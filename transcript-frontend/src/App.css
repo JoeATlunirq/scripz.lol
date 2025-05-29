@@ -1,0 +1,201 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f0f0f0; /* Fallback for very bright image */
+  background-image: url('/funny.jpg'); /* Path relative to public folder */
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  color: #333; /* Darker default text for better contrast on potentially light areas */
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  width: 100%;
+  max-width: 800px;
+  margin: 20px;
+  padding: 35px;
+  background-color: rgba(255, 255, 255, 0.9); /* Lighter, more opaque container */
+  border-radius: 16px; /* Slightly more rounded */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); /* Softer, more modern shadow */
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.title {
+  font-size: 2.6rem; /* Adjusted size */
+  color: #2c3e50; /* Dark, professional blue/grey */
+  text-align: center;
+  margin-bottom: 5px;
+  font-weight: 700; /* Bolder */
+}
+
+.tagline {
+  font-size: 1.05rem; /* Adjusted size */
+  color: #555; /* Softer dark grey */
+  text-align: center;
+  margin-bottom: 25px;
+  font-weight: 400;
+}
+
+.input-area {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+input[type="text"] {
+  flex-grow: 1;
+  padding: 14px 20px; /* Increased padding */
+  font-size: 1rem;
+  border: 1px solid #ddd; /* Lighter border */
+  border-radius: 10px;
+  background-color: #f9f9f9; /* Very light input field */
+  color: #333;
+  outline: none;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+input[type="text"]::placeholder {
+  color: #aaa;
+}
+
+input[type="text"]:focus {
+  border-color: #e74c3c; /* Vibrant pink/red for focus */
+  box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.1); /* Softer focus shadow */
+}
+
+.button {
+  padding: 14px 30px; /* Increased padding */
+  font-size: 1rem;
+  font-weight: 600; /* Bolder */
+  color: #ffffff !important; /* Ensure text is white */
+  background-color: #e74c3c; /* Vibrant Pink/Red */
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  outline: none;
+  text-decoration: none; /* For <a> tags */
+  display: inline-block; /* For <a> tags acting as buttons */
+  text-align: center;
+}
+
+.button:hover {
+  background-color: #c0392b; /* Darker shade on hover */
+  transform: translateY(-px);
+  color: #ffffff !important; /* Ensure text color stays white on hover */
+}
+
+.button:active {
+  background-color: #a93226;
+  transform: translateY(0);
+  color: #ffffff !important; /* Ensure text color stays white on active */
+}
+
+.transcript-display {
+  margin-top: 10px;
+  padding: 25px;
+  background-color: #fdfdfd; /* Almost white for transcript */
+  border: 1px solid #eee;
+  border-radius: 10px;
+  min-height: 150px; /* Adjusted height */
+  white-space: pre-wrap;
+  font-family: 'Georgia', serif; /* Changed font for readability */
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #333;
+  overflow-y: auto;
+  max-height: 350px;
+}
+
+.transcript-display.loading,
+.transcript-display.error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-style: italic;
+  color: #888;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Revert font for status messages */
+}
+
+.transcript-display.error {
+  color: #e74c3c; 
+}
+
+.video-info {
+  font-size: 0.85rem; /* Slightly smaller */
+  color: #777;
+  text-align: center;
+  margin-top: 0px;
+  margin-bottom: 10px;
+}
+
+/* Styling for the informational sections */
+.info-sections-wrapper {
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column; /* Stack on mobile */
+  gap: 25px;
+}
+
+.info-card {
+  background-color: #fff;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  flex: 1; /* Allows cards to grow equally if row layout is used later */
+}
+
+.info-card h3 {
+  font-size: 1.4rem;
+  color: #e74c3c; /* Vibrant accent color for headings */
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.info-card ol,
+.info-card ul {
+  padding-left: 20px;
+  margin-bottom: 0;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.info-card li {
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+.info-card strong {
+  color: #333; /* Stronger emphasis color */
+  font-weight: 600;
+}
+
+/* Optional: For wider screens, place info cards side-by-side */
+@media (min-width: 768px) {
+  .info-sections-wrapper {
+    flex-direction: row; /* Side-by-side on tablets and larger */
+  }
+}
+
+/* Remove default Vite logo/card styles if they were part of boilerplate and are not used */
+.logo, .card, .read-the-docs {
+  display: none !important; 
+}
+
+/* If @keyframes logo-spin is defined in Vite's default CSS, 
+   it's harder to "remove" directly without overriding its usage.
+   Usually, not using the elements that use this animation is sufficient. 
+   If it's still causing issues, you might need to find where it's applied 
+   and override that specific element's animation property to 'none'. */
