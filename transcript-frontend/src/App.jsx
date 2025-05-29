@@ -8,19 +8,16 @@ function App() {
   const [error, setError] = useState('')
   const [videoInfo, setVideoInfo] = useState({ id: '', lang: '' })
 
-  // Construct the correct API URL based on environment
   const envApiBase = import.meta.env.VITE_API_BASE_URL
-  let fetchUrlPrefix
+  let fullFetchUrl
 
-  if (envApiBase === '/') {
-    // In Vercel/production, if VITE_API_BASE_URL is '/', we want root-relative paths like '/api/transcript'
-    fetchUrlPrefix = '' // The path will start with /api/...
-  } else if (envApiBase) {
-    // If VITE_API_BASE_URL is a full URL (e.g. for a different staging backend)
-    fetchUrlPrefix = envApiBase
+  if (envApiBase && envApiBase !== '/') {
+    // If VITE_API_BASE_URL is a full URL (e.g., http://localhost:5001 or a specific staging/prod backend URL)
+    fullFetchUrl = `${envApiBase}/api/transcript`
   } else {
-    // Fallback for local development (VITE_API_BASE_URL is likely undefined)
-    fetchUrlPrefix = 'http://localhost:5001'
+    // If VITE_API_BASE_URL is '/' (for Vercel production relative paths) or undefined (fallback to relative for safety)
+    // This ensures it becomes /api/transcript, which is relative to the current domain root.
+    fullFetchUrl = '/api/transcript'
   }
 
   const fetchTranscript = async () => {
@@ -32,9 +29,6 @@ function App() {
     setError('')
     setTranscript('')
     setVideoInfo({ id: '', lang: '' })
-
-    // Use the correctly constructed prefix
-    const fullFetchUrl = `${fetchUrlPrefix}/api/transcript`
 
     try {
       const response = await fetch(fullFetchUrl, {
