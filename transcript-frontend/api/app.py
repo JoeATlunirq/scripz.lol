@@ -3,6 +3,7 @@ from flask_cors import CORS
 from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, TranscriptsDisabled, VideoUnavailable
 import re
 import logging
+import random
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -38,7 +39,7 @@ def get_transcript():
         logger.error(f"Invalid YouTube URL or no video ID found: {video_url}")
         return jsonify({"error": "Invalid YouTube URL"}), 400
 
-    proxies = [
+    proxies_list = [
         {'http': 'http://isp.oxylabs.io:8001', 'https': 'http://isp.oxylabs.io:8001'},
         {'http': 'http://isp.oxylabs.io:8002', 'https': 'http://isp.oxylabs.io:8002'},
         {'http': 'http://isp.oxylabs.io:8003', 'https': 'http://isp.oxylabs.io:8003'},
@@ -55,18 +56,17 @@ def get_transcript():
         {'http': 'http://isp.oxylabs.io:8014', 'https': 'http://isp.oxylabs.io:8014'},
         {'http': 'http://isp.oxylabs.io:8015', 'https': 'http://isp.oxylabs.io:8015'}
     ]
-    # You can add more proxies to the list from the ones you provided
-    # For example:
-    # {'http': 'http://45.196.47.125:8002', 'https': 'http://45.196.47.125:8002'},
+    
+    chosen_proxy = None
+    if proxies_list:
+        chosen_proxy = random.choice(proxies_list)
 
     try:
-        logger.info(f"Fetching transcript for video ID: {video_id} using proxies")
-        # languages = ['en', 'en-US'] # Example: prioritize US English
+        logger.info(f"Fetching transcript for video ID: {video_id} using proxy: {chosen_proxy}")
         languages = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ja', 'ko', 'zh-Hans', 'zh-Hant', 'ar', 'hi']
 
-        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, proxies=proxies)
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, proxies=chosen_proxy)
         
-        # Try to find a transcript in the preferred languages
         transcript = None
         for lang_code in languages:
             try:
@@ -79,22 +79,22 @@ def get_transcript():
                 continue
         
         if not transcript:
-            # If no generated transcript is found in preferred languages, try to find a manually created one
             try:
                 transcript = transcript_list.find_manually_created_transcript(languages)
                 if transcript:
                     logger.info(f"Found manually created transcript in one of the languages.")
             except NoTranscriptFound:
                 logger.info(f"No manually created transcript found in preferred languages either for {video_id}.")
-                # If still no transcript, try any available transcript as a last resort
                 if not transcript:
                     try:
-                        first_available = list(transcript_list)[0] # Get the first one
-                        transcript = transcript_list.find_generated_transcript([first_available.language_code])
-                        logger.info(f"Using first available transcript in language: {first_available.language_code}")
+                        if list(transcript_list): 
+                            first_available = list(transcript_list)[0]
+                            transcript = transcript_list.find_generated_transcript([first_available.language_code])
+                            logger.info(f"Using first available transcript in language: {first_available.language_code}")
+                        else:
+                            logger.error(f"Transcript list is empty for {video_id}. Cannot select fallback.")
                     except Exception as e_fallback:
                         logger.error(f"Could not find any transcript for {video_id} after all attempts. Fallback error: {str(e_fallback)}")
-                        return jsonify({"error": "No transcript found for this video after all attempts."}), 404
 
         if not transcript:
              logger.error(f"No transcript found for video ID {video_id} in any of the specified or available languages.")
@@ -106,19 +106,19 @@ def get_transcript():
             formatted_transcript = ""
         else:
             segments = []
-            current_segment = transcript_data[0].text
+            current_segment = transcript_data[0]['text']
             paragraph_break_threshold = 0.7 
 
             for i in range(1, len(transcript_data)):
                 prev_snippet = transcript_data[i-1]
                 current_snippet = transcript_data[i]
-                gap = current_snippet.start - (prev_snippet.start + prev_snippet.duration)
+                gap = current_snippet['start'] - (prev_snippet['start'] + prev_snippet['duration'])
 
                 if gap > paragraph_break_threshold:
                     segments.append(current_segment)
-                    current_segment = current_snippet.text
+                    current_segment = current_snippet['text']
                 else:
-                    current_segment += " " + current_snippet.text
+                    current_segment += " " + current_snippet['text']
             segments.append(current_segment)
             formatted_transcript = "\n\n".join(segments)
         
@@ -149,7 +149,7 @@ def get_transcript_json(): # This function name is now a bit confusing given the
     if not video_id:
         return jsonify({'error': 'Invalid YouTube URL or could not extract video ID'}), 400
 
-    proxies = [
+    proxies_list = [
         {'http': 'http://isp.oxylabs.io:8001', 'https': 'http://isp.oxylabs.io:8001'},
         {'http': 'http://isp.oxylabs.io:8002', 'https': 'http://isp.oxylabs.io:8002'},
         {'http': 'http://isp.oxylabs.io:8003', 'https': 'http://isp.oxylabs.io:8003'},
@@ -166,30 +166,33 @@ def get_transcript_json(): # This function name is now a bit confusing given the
         {'http': 'http://isp.oxylabs.io:8014', 'https': 'http://isp.oxylabs.io:8014'},
         {'http': 'http://isp.oxylabs.io:8015', 'https': 'http://isp.oxylabs.io:8015'}
     ]
+    
+    chosen_proxy = None
+    if proxies_list:
+        chosen_proxy = random.choice(proxies_list)
 
     try:
-        logger.info(f"Fetching transcript for video ID: {video_id} for JSON endpoint using proxies")
-        languages = ['en'] # For simplicity, just fetch English for the JSON endpoint
+        logger.info(f"Fetching transcript for video ID: {video_id} for JSON endpoint using proxy: {chosen_proxy}")
+        languages = ['en'] 
         
-        # Using get_transcript directly for simplicity if only one language is needed
-        transcript_data = YouTubeTranscriptApi.get_transcript(video_id, languages=languages, proxies=proxies)
+        transcript_data = YouTubeTranscriptApi.get_transcript(video_id, languages=languages, proxies=chosen_proxy)
         
         full_text = ""
         if transcript_data:
             segments = []
-            current_segment = transcript_data[0].text
+            current_segment = transcript_data[0]['text']
             paragraph_break_threshold = 0.7 
 
             for i in range(1, len(transcript_data)):
                 prev_snippet = transcript_data[i-1]
                 current_snippet = transcript_data[i]
-                gap = current_snippet.start - (prev_snippet.start + prev_snippet.duration)
+                gap = current_snippet['start'] - (prev_snippet['start'] + prev_snippet['duration'])
 
                 if gap > paragraph_break_threshold:
                     segments.append(current_segment)
-                    current_segment = current_snippet.text
+                    current_segment = current_snippet['text']
                 else:
-                    current_segment += " " + current_snippet.text
+                    current_segment += " " + current_snippet['text']
             segments.append(current_segment)
             full_text = "\n\n".join(segments)
         
