@@ -5,7 +5,7 @@
       "src": "api/app.py",
       "use": "@vercel/python",
       "config": { 
-        "pip": "api/requirements.txt"
+        "pip": "requirements.txt"
       }
     },
     {
