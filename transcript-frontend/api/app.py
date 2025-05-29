@@ -4,6 +4,7 @@ from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, Tran
 import re
 import logging
 import random
+import os # Added for environment variables
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -39,30 +40,46 @@ def get_transcript():
         logger.error(f"Invalid YouTube URL or no video ID found: {video_url}")
         return jsonify({"error": "Invalid YouTube URL"}), 400
 
-    proxies_list = [
-        {'http': 'http://isp.oxylabs.io:8001', 'https': 'http://isp.oxylabs.io:8001'},
-        {'http': 'http://isp.oxylabs.io:8002', 'https': 'http://isp.oxylabs.io:8002'},
-        {'http': 'http://isp.oxylabs.io:8003', 'https': 'http://isp.oxylabs.io:8003'},
-        {'http': 'http://isp.oxylabs.io:8004', 'https': 'http://isp.oxylabs.io:8004'},
-        {'http': 'http://isp.oxylabs.io:8005', 'https': 'http://isp.oxylabs.io:8005'},
-        {'http': 'http://isp.oxylabs.io:8006', 'https': 'http://isp.oxylabs.io:8006'},
-        {'http': 'http://isp.oxylabs.io:8007', 'https': 'http://isp.oxylabs.io:8007'},
-        {'http': 'http://isp.oxylabs.io:8008', 'https': 'http://isp.oxylabs.io:8008'},
-        {'http': 'http://isp.oxylabs.io:8009', 'https': 'http://isp.oxylabs.io:8009'},
-        {'http': 'http://isp.oxylabs.io:8010', 'https': 'http://isp.oxylabs.io:8010'},
-        {'http': 'http://isp.oxylabs.io:8011', 'https': 'http://isp.oxylabs.io:8011'},
-        {'http': 'http://isp.oxylabs.io:8012', 'https': 'http://isp.oxylabs.io:8012'},
-        {'http': 'http://isp.oxylabs.io:8013', 'https': 'http://isp.oxylabs.io:8013'},
-        {'http': 'http://isp.oxylabs.io:8014', 'https': 'http://isp.oxylabs.io:8014'},
-        {'http': 'http://isp.oxylabs.io:8015', 'https': 'http://isp.oxylabs.io:8015'}
-    ]
-    
+    # Get proxy credentials from environment variables
+    proxy_user = os.environ.get('PROXY_USER')
+    proxy_pass = os.environ.get('PROXY_PASS')
+
+    proxies_list = []
+    if proxy_user and proxy_pass:
+        base_proxy_urls = [
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8001",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8002",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8003",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8004",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8005",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8006",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8007",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8008",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8009",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8010",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8011",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8012",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8013",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8014",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8015",
+        ]
+        for url in base_proxy_urls:
+            proxies_list.append({'http': url, 'https': url})
+    else:
+        logger.warning("Proxy credentials (PROXY_USER, PROXY_PASS) not set. Attempting without proxies or with unauthenticated proxies if any were previously defined.")
+        # Optionally, you could define a fallback to unauthenticated proxies here if you still had some
+        # proxies_list = [ {'http': 'http://some_open_proxy.com:port', ...} ]
+        pass # Continue without authenticated proxies if credentials are not set
+
     chosen_proxy = None
     if proxies_list:
         chosen_proxy = random.choice(proxies_list)
+        logger.info(f"Attempting to use proxy: {chosen_proxy['http'].split('@')[-1]}") # Log proxy host without credentials
+    else:
+        logger.info("No proxies configured or credentials missing.")
 
     try:
-        logger.info(f"Fetching transcript for video ID: {video_id} using proxy: {chosen_proxy}")
+        logger.info(f"Fetching transcript for video ID: {video_id} using proxy: {chosen_proxy['http'].split('@')[-1] if chosen_proxy else 'None'}")
         languages = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ja', 'ko', 'zh-Hans', 'zh-Hant', 'ar', 'hi']
 
         transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, proxies=chosen_proxy)
@@ -149,30 +166,44 @@ def get_transcript_json(): # This function name is now a bit confusing given the
     if not video_id:
         return jsonify({'error': 'Invalid YouTube URL or could not extract video ID'}), 400
 
-    proxies_list = [
-        {'http': 'http://isp.oxylabs.io:8001', 'https': 'http://isp.oxylabs.io:8001'},
-        {'http': 'http://isp.oxylabs.io:8002', 'https': 'http://isp.oxylabs.io:8002'},
-        {'http': 'http://isp.oxylabs.io:8003', 'https': 'http://isp.oxylabs.io:8003'},
-        {'http': 'http://isp.oxylabs.io:8004', 'https': 'http://isp.oxylabs.io:8004'},
-        {'http': 'http://isp.oxylabs.io:8005', 'https': 'http://isp.oxylabs.io:8005'},
-        {'http': 'http://isp.oxylabs.io:8006', 'https': 'http://isp.oxylabs.io:8006'},
-        {'http': 'http://isp.oxylabs.io:8007', 'https': 'http://isp.oxylabs.io:8007'},
-        {'http': 'http://isp.oxylabs.io:8008', 'https': 'http://isp.oxylabs.io:8008'},
-        {'http': 'http://isp.oxylabs.io:8009', 'https': 'http://isp.oxylabs.io:8009'},
-        {'http': 'http://isp.oxylabs.io:8010', 'https': 'http://isp.oxylabs.io:8010'},
-        {'http': 'http://isp.oxylabs.io:8011', 'https': 'http://isp.oxylabs.io:8011'},
-        {'http': 'http://isp.oxylabs.io:8012', 'https': 'http://isp.oxylabs.io:8012'},
-        {'http': 'http://isp.oxylabs.io:8013', 'https': 'http://isp.oxylabs.io:8013'},
-        {'http': 'http://isp.oxylabs.io:8014', 'https': 'http://isp.oxylabs.io:8014'},
-        {'http': 'http://isp.oxylabs.io:8015', 'https': 'http://isp.oxylabs.io:8015'}
-    ]
+    # Get proxy credentials from environment variables
+    proxy_user = os.environ.get('PROXY_USER')
+    proxy_pass = os.environ.get('PROXY_PASS')
+
+    proxies_list = []
+    if proxy_user and proxy_pass:
+        base_proxy_urls = [
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8001",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8002",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8003",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8004",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8005",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8006",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8007",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8008",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8009",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8010",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8011",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8012",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8013",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8014",
+            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8015",
+        ]
+        for url in base_proxy_urls:
+            proxies_list.append({'http': url, 'https': url})
+    else:
+        logger.warning("Proxy credentials (PROXY_USER, PROXY_PASS) not set for JSON endpoint. Attempting without proxies.")
+        pass
     
     chosen_proxy = None
     if proxies_list:
         chosen_proxy = random.choice(proxies_list)
+        logger.info(f"Attempting to use proxy: {chosen_proxy['http'].split('@')[-1]} for JSON endpoint")
+    else:
+        logger.info("No proxies configured or credentials missing for JSON endpoint.")
 
     try:
-        logger.info(f"Fetching transcript for video ID: {video_id} for JSON endpoint using proxy: {chosen_proxy}")
+        logger.info(f"Fetching transcript for video ID: {video_id} for JSON endpoint using proxy: {chosen_proxy['http'].split('@')[-1] if chosen_proxy else 'None'}")
         languages = ['en'] 
         
         transcript_data = YouTubeTranscriptApi.get_transcript(video_id, languages=languages, proxies=chosen_proxy)
