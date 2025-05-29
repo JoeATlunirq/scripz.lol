@@ -8,7 +8,20 @@ function App() {
   const [error, setError] = useState('')
   const [videoInfo, setVideoInfo] = useState({ id: '', lang: '' })
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001'
+  // Construct the correct API URL based on environment
+  const envApiBase = import.meta.env.VITE_API_BASE_URL
+  let fetchUrlPrefix
+
+  if (envApiBase === '/') {
+    // In Vercel/production, if VITE_API_BASE_URL is '/', we want root-relative paths like '/api/transcript'
+    fetchUrlPrefix = '' // The path will start with /api/...
+  } else if (envApiBase) {
+    // If VITE_API_BASE_URL is a full URL (e.g. for a different staging backend)
+    fetchUrlPrefix = envApiBase
+  } else {
+    // Fallback for local development (VITE_API_BASE_URL is likely undefined)
+    fetchUrlPrefix = 'http://localhost:5001'
+  }
 
   const fetchTranscript = async () => {
     if (!videoUrl) {
@@ -20,8 +33,11 @@ function App() {
     setTranscript('')
     setVideoInfo({ id: '', lang: '' })
 
+    // Use the correctly constructed prefix
+    const fullFetchUrl = `${fetchUrlPrefix}/api/transcript`
+
     try {
-      const response = await fetch(`${API_BASE_URL}/api/transcript`, {
+      const response = await fetch(fullFetchUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
