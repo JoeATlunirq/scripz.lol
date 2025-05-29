@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, TranscriptsDisabled, VideoUnavailable
+from youtube_transcript_api.proxies import WebshareProxyConfig
 import re
 import logging
 import random
@@ -40,83 +41,30 @@ def get_transcript():
         logger.error(f"Invalid YouTube URL or no video ID found: {video_url}")
         return jsonify({"error": "Invalid YouTube URL"}), 400
 
-    # New list of proxies with embedded credentials
-    raw_proxies = [
-        "175.29.65.78:64232:oeermqym:hOf1n6aZ5bX6",
-        "175.29.64.223:64091:oeermqym:hOf1n6aZ5bX6",
-        "175.29.95.44:49449:oeermqym:hOf1n6aZ5bX6",
-        "175.29.76.202:49651:oeermqym:hOf1n6aZ5bX6",
-        "175.29.80.86:64194:oeermqym:hOf1n6aZ5bX6",
-        "175.29.81.220:64481:oeermqym:hOf1n6aZ5bX6",
-        "175.29.84.162:59986:oeermqym:hOf1n6aZ5bX6",
-        "175.29.86.100:59888:oeermqym:hOf1n6aZ5bX6",
-        "175.29.85.51:57137:oeermqym:hOf1n6aZ5bX6",
-        "175.29.90.121:50603:oeermqym:hOf1n6aZ5bX6",
-        "175.29.87.126:51968:oeermqym:hOf1n6aZ5bX6",
-        "175.29.91.17:55051:oeermqym:hOf1n6aZ5bX6",
-        "175.29.65.35:60231:oeermqym:hOf1n6aZ5bX6",
-        "175.29.75.90:63029:oeermqym:hOf1n6aZ5bX6",
-        "175.29.80.22:49754:oeermqym:hOf1n6aZ5bX6",
-        "175.29.78.106:52075:oeermqym:hOf1n6aZ5bX6",
-        "175.29.88.109:53175:oeermqym:hOf1n6aZ5bX6",
-        "175.29.65.103:64765:oeermqym:hOf1n6aZ5bX6",
-        "175.29.71.93:59859:oeermqym:hOf1n6aZ5bX6",
-        "175.29.83.187:58276:oeermqym:hOf1n6aZ5bX6",
-        "175.29.68.252:49953:oeermqym:hOf1n6aZ5bX6",
-        "175.29.95.191:59263:oeermqym:hOf1n6aZ5bX6",
-        "175.29.79.9:50882:oeermqym:hOf1n6aZ5bX6",
-        "175.29.64.58:49211:oeermqym:hOf1n6aZ5bX6",
-        "175.29.76.119:62729:oeermqym:hOf1n6aZ5bX6",
-        "175.29.95.80:61187:oeermqym:hOf1n6aZ5bX6",
-        "175.29.92.86:57295:oeermqym:hOf1n6aZ5bX6",
-        "175.29.95.47:60149:oeermqym:hOf1n6aZ5bX6",
-        "175.29.69.66:57669:oeermqym:hOf1n6aZ5bX6",
-        "175.29.90.168:58776:oeermqym:hOf1n6aZ5bX6",
-        "175.29.77.245:61241:oeermqym:hOf1n6aZ5bX6",
-        "175.29.93.35:57726:oeermqym:hOf1n6aZ5bX6",
-        "175.29.68.126:58122:oeermqym:hOf1n6aZ5bX6",
-        "175.29.86.61:51816:oeermqym:hOf1n6aZ5bX6",
-        "175.29.86.59:62698:oeermqym:hOf1n6aZ5bX6",
-        "175.29.76.149:49778:oeermqym:hOf1n6aZ5bX6",
-        "175.29.89.118:62068:oeermqym:hOf1n6aZ5bX6",
-        "175.29.85.248:60123:oeermqym:hOf1n6aZ5bX6",
-        "175.29.75.150:65157:oeermqym:hOf1n6aZ5bX6",
-        "175.29.64.122:55021:oeermqym:hOf1n6aZ5bX6",
-        "175.29.75.33:53083:oeermqym:hOf1n6aZ5bX6",
-        "175.29.75.166:53564:oeermqym:hOf1n6aZ5bX6",
-        "175.29.68.29:55691:oeermqym:hOf1n6aZ5bX6",
-        "175.29.87.60:55796:oeermqym:hOf1n6aZ5bX6",
-        "175.29.95.92:62772:oeermqym:hOf1n6aZ5bX6",
-        "175.29.66.15:63821:oeermqym:hOf1n6aZ5bX6",
-        "175.29.91.113:54642:oeermqym:hOf1n6aZ5bX6",
-        "175.29.72.79:60577:oeermqym:hOf1n6aZ5bX6",
-        "175.29.79.44:64245:oeermqym:hOf1n6aZ5bX6",
-        "175.29.76.234:50656:oeermqym:hOf1n6aZ5bX6"
-    ]
+    webshare_user = os.environ.get('WEBSHARE_USER')
+    webshare_pass = os.environ.get('WEBSHARE_PASS')
 
-    proxies_list = []
-    for proxy_string in raw_proxies:
-        try:
-            parts = proxy_string.split(':')
-            ip, port, user, password = parts[0], parts[1], parts[2], parts[3]
-            auth_proxy_url = f"http://{user}:{password}@{ip}:{port}"
-            proxies_list.append({'http': auth_proxy_url, 'https': auth_proxy_url})
-        except IndexError:
-            logger.warning(f"Skipping malformed proxy string: {proxy_string}")
-            continue
-    
-    chosen_proxy = None
-    if proxies_list:
-        chosen_proxy = random.choice(proxies_list)
-        logger.info(f"Attempting to use proxy: {chosen_proxy['http'].split('@')[-1]}") 
-    else:
-        logger.info("No valid proxies configured from the provided list.")
+    if not (webshare_user and webshare_pass):
+        logger.error("Webshare credentials (WEBSHARE_USER, WEBSHARE_PASS) are not set in environment variables.")
+        return jsonify({"error": "Server proxy configuration error. Please contact support."}), 500
+
+    proxy_config = None
+    try:
+        proxy_config = WebshareProxyConfig(
+            proxy_username=webshare_user,
+            proxy_password=webshare_pass
+        )
+        logger.info(f"Using Webshare proxy configuration for user: {webshare_user}")
+    except Exception as e_proxy_cfg:
+        logger.error(f"Error initializing WebshareProxyConfig: {str(e_proxy_cfg)}")
+        return jsonify({"error": "Server proxy configuration error at initialization. Please contact support."}), 500
 
     try:
-        logger.info(f"Fetching transcript for video ID: {video_id} using proxy: {chosen_proxy['http'].split('@')[-1] if chosen_proxy else 'None'}")
+        ytt_api_instance = YouTubeTranscriptApi(proxy_config=proxy_config)
+        logger.info(f"Fetching transcript for video ID: {video_id} using WebshareProxyConfig")
         languages = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ja', 'ko', 'zh-Hans', 'zh-Hant', 'ar', 'hi']
 
-        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, proxies=chosen_proxy)
+        transcript_list = ytt_api_instance.list_transcripts(video_id)
         
         transcript = None
         for lang_code in languages:
@@ -200,83 +148,30 @@ def get_transcript_json(): # This function name is now a bit confusing given the
     if not video_id:
         return jsonify({'error': 'Invalid YouTube URL or could not extract video ID'}), 400
 
-    # New list of proxies with embedded credentials
-    raw_proxies = [
-        "175.29.65.78:64232:oeermqym:hOf1n6aZ5bX6",
-        "175.29.64.223:64091:oeermqym:hOf1n6aZ5bX6",
-        "175.29.95.44:49449:oeermqym:hOf1n6aZ5bX6",
-        "175.29.76.202:49651:oeermqym:hOf1n6aZ5bX6",
-        "175.29.80.86:64194:oeermqym:hOf1n6aZ5bX6",
-        "175.29.81.220:64481:oeermqym:hOf1n6aZ5bX6",
-        "175.29.84.162:59986:oeermqym:hOf1n6aZ5bX6",
-        "175.29.86.100:59888:oeermqym:hOf1n6aZ5bX6",
-        "175.29.85.51:57137:oeermqym:hOf1n6aZ5bX6",
-        "175.29.90.121:50603:oeermqym:hOf1n6aZ5bX6",
-        "175.29.87.126:51968:oeermqym:hOf1n6aZ5bX6",
-        "175.29.91.17:55051:oeermqym:hOf1n6aZ5bX6",
-        "175.29.65.35:60231:oeermqym:hOf1n6aZ5bX6",
-        "175.29.75.90:63029:oeermqym:hOf1n6aZ5bX6",
-        "175.29.80.22:49754:oeermqym:hOf1n6aZ5bX6",
-        "175.29.78.106:52075:oeermqym:hOf1n6aZ5bX6",
-        "175.29.88.109:53175:oeermqym:hOf1n6aZ5bX6",
-        "175.29.65.103:64765:oeermqym:hOf1n6aZ5bX6",
-        "175.29.71.93:59859:oeermqym:hOf1n6aZ5bX6",
-        "175.29.83.187:58276:oeermqym:hOf1n6aZ5bX6",
-        "175.29.68.252:49953:oeermqym:hOf1n6aZ5bX6",
-        "175.29.95.191:59263:oeermqym:hOf1n6aZ5bX6",
-        "175.29.79.9:50882:oeermqym:hOf1n6aZ5bX6",
-        "175.29.64.58:49211:oeermqym:hOf1n6aZ5bX6",
-        "175.29.76.119:62729:oeermqym:hOf1n6aZ5bX6",
-        "175.29.95.80:61187:oeermqym:hOf1n6aZ5bX6",
-        "175.29.92.86:57295:oeermqym:hOf1n6aZ5bX6",
-        "175.29.95.47:60149:oeermqym:hOf1n6aZ5bX6",
-        "175.29.69.66:57669:oeermqym:hOf1n6aZ5bX6",
-        "175.29.90.168:58776:oeermqym:hOf1n6aZ5bX6",
-        "175.29.77.245:61241:oeermqym:hOf1n6aZ5bX6",
-        "175.29.93.35:57726:oeermqym:hOf1n6aZ5bX6",
-        "175.29.68.126:58122:oeermqym:hOf1n6aZ5bX6",
-        "175.29.86.61:51816:oeermqym:hOf1n6aZ5bX6",
-        "175.29.86.59:62698:oeermqym:hOf1n6aZ5bX6",
-        "175.29.76.149:49778:oeermqym:hOf1n6aZ5bX6",
-        "175.29.89.118:62068:oeermqym:hOf1n6aZ5bX6",
-        "175.29.85.248:60123:oeermqym:hOf1n6aZ5bX6",
-        "175.29.75.150:65157:oeermqym:hOf1n6aZ5bX6",
-        "175.29.64.122:55021:oeermqym:hOf1n6aZ5bX6",
-        "175.29.75.33:53083:oeermqym:hOf1n6aZ5bX6",
-        "175.29.75.166:53564:oeermqym:hOf1n6aZ5bX6",
-        "175.29.68.29:55691:oeermqym:hOf1n6aZ5bX6",
-        "175.29.87.60:55796:oeermqym:hOf1n6aZ5bX6",
-        "175.29.95.92:62772:oeermqym:hOf1n6aZ5bX6",
-        "175.29.66.15:63821:oeermqym:hOf1n6aZ5bX6",
-        "175.29.91.113:54642:oeermqym:hOf1n6aZ5bX6",
-        "175.29.72.79:60577:oeermqym:hOf1n6aZ5bX6",
-        "175.29.79.44:64245:oeermqym:hOf1n6aZ5bX6",
-        "175.29.76.234:50656:oeermqym:hOf1n6aZ5bX6"
-    ]
+    webshare_user = os.environ.get('WEBSHARE_USER')
+    webshare_pass = os.environ.get('WEBSHARE_PASS')
 
-    proxies_list = []
-    for proxy_string in raw_proxies:
-        try:
-            parts = proxy_string.split(':')
-            ip, port, user, password = parts[0], parts[1], parts[2], parts[3]
-            auth_proxy_url = f"http://{user}:{password}@{ip}:{port}"
-            proxies_list.append({'http': auth_proxy_url, 'https': auth_proxy_url})
-        except IndexError:
-            logger.warning(f"Skipping malformed proxy string for JSON endpoint: {proxy_string}")
-            continue
-    
-    chosen_proxy = None
-    if proxies_list:
-        chosen_proxy = random.choice(proxies_list)
-        logger.info(f"Attempting to use proxy: {chosen_proxy['http'].split('@')[-1]} for JSON endpoint")
-    else:
-        logger.info("No valid proxies configured from the provided list for JSON endpoint.")
+    if not (webshare_user and webshare_pass):
+        logger.error("Webshare credentials not set for JSON endpoint.")
+        return jsonify({"error": "Server proxy configuration error."}), 500
+
+    proxy_config = None
+    try:
+        proxy_config = WebshareProxyConfig(
+            proxy_username=webshare_user,
+            proxy_password=webshare_pass
+        )
+        logger.info(f"Using Webshare proxy configuration for user: {webshare_user} (JSON endpoint)")
+    except Exception as e_proxy_cfg:
+        logger.error(f"Error initializing WebshareProxyConfig for JSON endpoint: {str(e_proxy_cfg)}")
+        return jsonify({"error": "Server proxy configuration error at initialization."}), 500
 
     try:
-        logger.info(f"Fetching transcript for video ID: {video_id} for JSON endpoint using proxy: {chosen_proxy['http'].split('@')[-1] if chosen_proxy else 'None'}")
+        ytt_api_instance = YouTubeTranscriptApi(proxy_config=proxy_config)
+        logger.info(f"Fetching transcript for video ID: {video_id} for JSON endpoint using WebshareProxyConfig")
         languages = ['en'] 
         
-        transcript_data = YouTubeTranscriptApi.get_transcript(video_id, languages=languages, proxies=chosen_proxy)
+        transcript_data = ytt_api_instance.get_transcript(video_id, languages=languages)
         
         full_text = ""
         if transcript_data:
