@@ -1,7 +1,7 @@
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #f0f0f0; /* Fallback for very bright image */
-  background-image: url('/funny.jpg'); /* Path relative to public folder */
+  background-image: url('/funny-min.jpg'); /* Updated image path */
   background-size: cover;
   background-position: center;
   background-attachment: fixed;

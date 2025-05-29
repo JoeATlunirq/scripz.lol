@@ -24,12 +24,16 @@
       "dest": "/assets/$1"
     },
     {
+      "src": "/favicon.ico",
+      "dest": "/favicon.ico"
+    },
+    {
       "src": "/vite.svg",
       "dest": "/vite.svg"
     },
     {
-      "src": "/funny.jpg",
-      "dest": "/funny.jpg"
+      "src": "/funny-min.jpg",
+      "dest": "/funny-min.jpg"
     },
     {
       "src": "/Phonk.jpg",
