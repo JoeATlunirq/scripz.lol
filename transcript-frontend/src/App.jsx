@@ -8,6 +8,8 @@ function App() {
   const [error, setError] = useState('')
   const [videoInfo, setVideoInfo] = useState({ id: '', lang: '' })
 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001'
+
   const fetchTranscript = async () => {
     if (!videoUrl) {
       setError('Please enter a YouTube video URL.')
@@ -19,7 +21,7 @@ function App() {
     setVideoInfo({ id: '', lang: '' })
 
     try {
-      const response = await fetch(`/api/transcript`, {
+      const response = await fetch(`${API_BASE_URL}/api/transcript`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

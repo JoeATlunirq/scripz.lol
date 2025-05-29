@@ -2,20 +2,18 @@ import React from 'react';
 import './App.css'; // Reuse existing styles
 
 function ApiDocs() {
-  // const deployedApiUrl = import.meta.env.VITE_API_BASE_URL || 'https://your-backend-name.vercel.app'; // No longer needed
-  // For a unified deployment, the API is relative to the current domain
-  const currentDomainApiUrl = '/api'; 
+  const deployedApiUrl = import.meta.env.VITE_API_BASE_URL || 'https://your-backend-name.vercel.app'; // Fallback for local view
+  // const localApiUrl = 'http://localhost:5001'; // For testing docs with local backend
 
   return (
     <div style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 20px' }}> 
       <h1 className="title">API Documentation</h1>
-      {/* Update tagline to reflect API is on the same domain */}
-      <p className="tagline">Free & Simple YouTube Transcript API (Live API at {window.location.origin}/api)</p>
+      <p className="tagline">Free & Simple YouTube Transcript API (Live API at {deployedApiUrl.replace(/https?:\/\//, '').split('/')[0]})</p>
 
       <div className="info-card" style={{ marginBottom: '25px' }}>
         <h3>Get Transcript (JSON)</h3>
         <p>This endpoint allows you to fetch the full transcript of a YouTube video as a JSON object.</p>
-        <p><strong>Endpoint:</strong> <code>{currentDomainApiUrl}/get_transcript</code></p>
+        <p><strong>Endpoint:</strong> <code>{deployedApiUrl}/api/get_transcript</code></p>
         <p><strong>Method:</strong> <code>POST</code></p>
         <p><strong>Request Body:</strong> JSON</p>
         <pre><code style={{ display: 'block', whiteSpace: 'pre', backgroundColor: '#f5f5f5', padding: '10px', borderRadius: '4px', color: '#333'}}>

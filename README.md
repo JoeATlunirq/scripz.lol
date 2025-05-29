@@ -2,109 +2,86 @@
 
 This project provides a sleek web interface to fetch YouTube video transcripts and a simple API to get transcript data programmatically.
 
-It uses the `youtube-transcript-api` Python library for its core functionality.
+It uses the `youtube-transcript-api` Python library (the one this project is based on) for its core functionality.
 
-**Live Demo & API Base URL:** [https://scripz.lol](https://scripz.lol) (The API will be available at `https://scripz.lol/api/`)
+**Live Demo & API Base URL:** [https://scripz.lol](https://scripz.lol) (Replace with your actual Vercel frontend URL)
 
 ## Features
 
-*   **Web Interface (React + Vite):**
+*   **Web Interface:**
     *   Modern, responsive design with a vibrant theme.
     *   Input a YouTube video URL to fetch and display its transcript.
     *   Intelligently formats transcripts with paragraph breaks based on pauses.
     *   Displays video ID and detected language.
     *   Link to API documentation.
-*   **Backend API (Python/Flask served as Serverless Function):**
-    *   Located in the `/transcript-frontend/api` directory.
+*   **Backend API:**
     *   Endpoint to get full transcript text as JSON.
     *   Prioritizes English, then other manually created, then auto-generated transcripts.
     *   Formatted text output for readability.
 
 ## Project Structure
 
-*   `/transcript-frontend`: Main project directory for Vercel deployment.
-    *   `/api`: Contains the Flask (Python) backend API.
-        *   `app.py`: The Flask application.
-        *   `requirements.txt`: Python dependencies for the API.
-        *   `/youtube_transcript_api`: Bundled transcript library.
-    *   `/public`: Static assets for the frontend.
-    *   `/src`: Frontend React components and logic.
-    *   `vercel.json`: Configuration for Vercel to build both frontend and backend API.
-*   `README.md`: This file.
-*   The original `transcript-backend` directory can now be deleted if all its contents were successfully moved.
+*   `/transcript-frontend`: React + Vite frontend application.
+*   `/transcript-backend`: Flask (Python) backend API.
+    *   Contains a copy of the `youtube_transcript_api` library for deployment.
+*   `/youtube_transcript_api`: The original Python library for fetching YouTube transcripts (cloned alongside this application).
 
 ## Local Development
 
 ### Prerequisites
 
-*   Node.js and npm
-*   Python 3.x and pip
+*   Node.js and npm (for frontend)
+*   Python 3.x and pip (for backend)
 
-### 1. Combined Frontend & API Development
+### 1. Backend Setup
 
-For local development that closely mimics the Vercel setup (frontend serving and API under `/api`):
+```bash
+# Navigate to the backend directory
+cd transcript-backend
 
-1.  **Navigate to the `transcript-frontend` directory:**
-    ```bash
-    cd transcript-frontend
-    ```
-2.  **Install frontend dependencies:**
-    ```bash
-    npm install
-    ```
-3.  **Install backend dependencies (for the API in `transcript-frontend/api`):**
-    ```bash
-    # Ensure you have a virtual environment tool or manage Python packages globally/per-project as you prefer.
-    # Example: create and activate a venv inside transcript-frontend/api
-    # cd api
-    # python3 -m venv venv
-    # source venv/bin/activate 
-    # pip install -r requirements.txt
-    # cd .. (back to transcript-frontend)
-    # For simplicity if you manage python globally or don't want a nested venv now:
-    pip install -r api/requirements.txt
-    ```
-4.  **Run the Vite dev server with Vercel CLI for API proxying:**
-    The Vite dev server doesn't run Python. To test the `/api` routes locally, you need a proxy or a tool that can serve both. The Vercel CLI is perfect for this.
-    ```bash
-    # Install Vercel CLI globally if you haven't already
-    # npm install -g vercel
+# Create a virtual environment
+python3 -m venv venv
 
-    # Run the development server using Vercel CLI from the transcript-frontend directory
-    vercel dev
-    ```
-    This command will: 
-    *   Build and serve your Vite frontend.
-    *   Run your Python API functions from the `transcript-frontend/api` directory.
-    *   Make your API available at `http://localhost:3000/api/...` (Vercel CLI usually uses port 3000).
-    *   Your frontend will be at `http://localhost:3000`.
+# Activate the virtual environment
+# On macOS/Linux:
+source venv/bin/activate
+# On Windows:
+# venv\Scripts\activate
 
-### Alternative: Separate Local Development (If Vercel CLI is not used)
+# Install dependencies
+pip install -r requirements.txt
 
-If you don't use `vercel dev`, you'd run them separately and need CORS handling:
+# (Crucial for local development if not copying the library in yet)
+# Ensure the main youtube_transcript_api library is in your PYTHONPATH
+# or copy it into the transcript-backend directory as recommended for Vercel.
+# If you've already copied it in for Vercel, this step is covered.
 
-*   **Backend (from `transcript-frontend/api` directory):**
-    ```bash
-    cd transcript-frontend/api
-    # Activate virtual environment if you made one here
-    # source venv/bin/activate
-    python app.py 
-    ```
-    This will start the Flask app, typically on `http://localhost:5001`.
-*   **Frontend (from `transcript-frontend` directory):**
-    ```bash
-    cd transcript-frontend
-    npm run dev
-    ```
-    This starts on `http://localhost:5173` (or similar). **Note:** In this separate setup, if `App.jsx` calls `/api/transcript`, it will fail because it tries `http://localhost:5173/api/transcript`. You would temporarily need to revert `App.jsx` to use `http://localhost:5001/api/transcript` for this specific local setup and ensure `CORS(app)` is active in your `api/app.py`.
+# Run the Flask app
+python app.py
+```
 
-**Using `vercel dev` is highly recommended for local development that mirrors the deployment.**
+The backend will typically start on `http://localhost:5001`.
+
+### 2. Frontend Setup
+
+```bash
+# Navigate to the frontend directory (from the project root)
+cd transcript-frontend
+
+# Install dependencies
+npm install
+
+# Run the Vite dev server
+npm run dev
+```
+
+The frontend will typically start on `http://localhost:5173` and open in your browser.
 
 ## API Usage
 
-The API endpoint is documented on the frontend at `/api-docs`.
+The primary API endpoint is documented on the frontend at `/api-docs` (e.g., `http://localhost:5173/api-docs` locally, or `https://scripz.lol/api-docs` once deployed).
 
-**Endpoint:** `/api/get_transcript` (relative to the deployed domain)
+**Endpoint:** `/api/get_transcript`
 **Method:** `POST`
 **Request Body (JSON):**
 ```json
@@ -123,20 +100,42 @@ The API endpoint is documented on the frontend at `/api-docs`.
 
 ## Deployment to Vercel
 
-With the new structure, deployment is simpler:
+This project is structured for easy deployment to Vercel.
 
-1.  Ensure all changes are committed to your Git repository.
-2.  In Vercel, create a **single new project** and link it to your Git repository.
-3.  When configuring the project in Vercel:
+### 1. Backend (`transcript-backend`)
+
+*   **IMPORTANT:** Ensure the `youtube_transcript_api` library folder is copied *inside* the `transcript-backend` directory.
+*   The `transcript-backend` directory contains a `vercel.json` file configured for Python deployments.
+*   Push your project to a Git repository (e.g., GitHub, GitLab, Bitbucket).
+*   In Vercel, create a new project and link it to your Git repository.
+*   When configuring the project in Vercel:
+    *   Set the **Root Directory** to `transcript-backend`.
+    *   Vercel should automatically detect it as a Python project using `app.py` and the `vercel.json`.
+    *   Deploy!
+    *   Your backend API will be available at the Vercel-provided domain (e.g., `your-backend-name.vercel.app`). You'll use this as the base URL for your API (e.g., in your frontend's API calls if you don't proxy, or update `apiUrl` in `ApiDocs.jsx` and fetch calls in `App.jsx` if you want them to point to the deployed backend).
+
+### 2. Frontend (`transcript-frontend`)
+
+*   In Vercel, create another new project and link it to the same Git repository.
+*   When configuring this project in Vercel:
     *   Set the **Root Directory** to `transcript-frontend`.
-    *   Vercel should automatically detect the `vercel.json` inside `transcript-frontend` and understand how to build both the static frontend and the Python API functions in the `/api` directory.
-    *   No special environment variables like `VITE_API_BASE_URL` are needed for the API calls anymore, as they are now relative paths.
-4.  Deploy!
-5.  Assign your custom domains (`scripz.lol`, `gimmedatscript.com`) to this single Vercel project.
+    *   Vercel should automatically detect it as a Vite project.
+    *   **Environment Variables (Optional but Recommended):**
+        *   If you want your frontend to call your deployed backend, you might set an environment variable like `VITE_API_BASE_URL` to your Vercel backend URL (e.g., `https://your-backend-name.vercel.app`). Then in your `App.jsx` fetch calls, you would use `import.meta.env.VITE_API_BASE_URL`.
+        *   Alternatively, for `scripz.lol` or `gimmedatscript.com`, you can set up Vercel rewrites/proxies if you want the API to be served under the same domain as the frontend (e.g., `scripz.lol/api/...` actually points to your backend deployment). This is a more advanced setup.
+    *   Deploy!
+    *   This will be your main user-facing site (e.g., `https://scripz.lol`).
+
+### Pointing Your Custom Domain(s)
+
+Once both frontend and backend are deployed on Vercel, you can assign your custom domains (`scripz.lol`, `gimmedatscript.com`) to your **frontend deployment** through the Vercel dashboard.
+
+If you are *not* using Vercel rewrites to serve the API under the same domain, ensure your frontend code is configured to call the correct deployed backend URL.
 
 ## GitHub Repository Description
 
-"🎤 Extract YouTube video transcripts easily! Sleek web UI + simple JSON API. Built with React, Vite, and Python (Flask). Unified Vercel deployment."
+"🎤 Extract YouTube video transcripts easily! Sleek web UI + simple JSON API. Built with React, Vite, Python (Flask), and youtube-transcript-api. Ready for Vercel deployment."
 
----
-*Remember to replace placeholder URLs like `https://scripz.lol` with your actual deployed URL if it differs.*
+--- 
+
+*Remember to replace placeholder URLs like `https://scripz.lol` with your actual deployed URLs.*
