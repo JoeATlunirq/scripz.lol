@@ -20,6 +20,29 @@
       "dest": "api/app.py"
     },
     {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/vite.svg",
+      "dest": "/vite.svg"
+    },
+    {
+      "src": "/funny.jpg",
+      "dest": "/funny.jpg"
+    },
+    {
+      "src": "/Phonk.jpg",
+      "dest": "/Phonk.jpg"
+    },
+    {
+      "src": "/Texture11.jpg",
+      "dest": "/Texture11.jpg"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
