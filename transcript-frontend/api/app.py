@@ -40,43 +40,77 @@ def get_transcript():
         logger.error(f"Invalid YouTube URL or no video ID found: {video_url}")
         return jsonify({"error": "Invalid YouTube URL"}), 400
 
-    # Get proxy credentials from environment variables
-    proxy_user = os.environ.get('PROXY_USER')
-    proxy_pass = os.environ.get('PROXY_PASS')
+    # New list of proxies with embedded credentials
+    raw_proxies = [
+        "175.29.65.78:64232:oeermqym:hOf1n6aZ5bX6",
+        "175.29.64.223:64091:oeermqym:hOf1n6aZ5bX6",
+        "175.29.95.44:49449:oeermqym:hOf1n6aZ5bX6",
+        "175.29.76.202:49651:oeermqym:hOf1n6aZ5bX6",
+        "175.29.80.86:64194:oeermqym:hOf1n6aZ5bX6",
+        "175.29.81.220:64481:oeermqym:hOf1n6aZ5bX6",
+        "175.29.84.162:59986:oeermqym:hOf1n6aZ5bX6",
+        "175.29.86.100:59888:oeermqym:hOf1n6aZ5bX6",
+        "175.29.85.51:57137:oeermqym:hOf1n6aZ5bX6",
+        "175.29.90.121:50603:oeermqym:hOf1n6aZ5bX6",
+        "175.29.87.126:51968:oeermqym:hOf1n6aZ5bX6",
+        "175.29.91.17:55051:oeermqym:hOf1n6aZ5bX6",
+        "175.29.65.35:60231:oeermqym:hOf1n6aZ5bX6",
+        "175.29.75.90:63029:oeermqym:hOf1n6aZ5bX6",
+        "175.29.80.22:49754:oeermqym:hOf1n6aZ5bX6",
+        "175.29.78.106:52075:oeermqym:hOf1n6aZ5bX6",
+        "175.29.88.109:53175:oeermqym:hOf1n6aZ5bX6",
+        "175.29.65.103:64765:oeermqym:hOf1n6aZ5bX6",
+        "175.29.71.93:59859:oeermqym:hOf1n6aZ5bX6",
+        "175.29.83.187:58276:oeermqym:hOf1n6aZ5bX6",
+        "175.29.68.252:49953:oeermqym:hOf1n6aZ5bX6",
+        "175.29.95.191:59263:oeermqym:hOf1n6aZ5bX6",
+        "175.29.79.9:50882:oeermqym:hOf1n6aZ5bX6",
+        "175.29.64.58:49211:oeermqym:hOf1n6aZ5bX6",
+        "175.29.76.119:62729:oeermqym:hOf1n6aZ5bX6",
+        "175.29.95.80:61187:oeermqym:hOf1n6aZ5bX6",
+        "175.29.92.86:57295:oeermqym:hOf1n6aZ5bX6",
+        "175.29.95.47:60149:oeermqym:hOf1n6aZ5bX6",
+        "175.29.69.66:57669:oeermqym:hOf1n6aZ5bX6",
+        "175.29.90.168:58776:oeermqym:hOf1n6aZ5bX6",
+        "175.29.77.245:61241:oeermqym:hOf1n6aZ5bX6",
+        "175.29.93.35:57726:oeermqym:hOf1n6aZ5bX6",
+        "175.29.68.126:58122:oeermqym:hOf1n6aZ5bX6",
+        "175.29.86.61:51816:oeermqym:hOf1n6aZ5bX6",
+        "175.29.86.59:62698:oeermqym:hOf1n6aZ5bX6",
+        "175.29.76.149:49778:oeermqym:hOf1n6aZ5bX6",
+        "175.29.89.118:62068:oeermqym:hOf1n6aZ5bX6",
+        "175.29.85.248:60123:oeermqym:hOf1n6aZ5bX6",
+        "175.29.75.150:65157:oeermqym:hOf1n6aZ5bX6",
+        "175.29.64.122:55021:oeermqym:hOf1n6aZ5bX6",
+        "175.29.75.33:53083:oeermqym:hOf1n6aZ5bX6",
+        "175.29.75.166:53564:oeermqym:hOf1n6aZ5bX6",
+        "175.29.68.29:55691:oeermqym:hOf1n6aZ5bX6",
+        "175.29.87.60:55796:oeermqym:hOf1n6aZ5bX6",
+        "175.29.95.92:62772:oeermqym:hOf1n6aZ5bX6",
+        "175.29.66.15:63821:oeermqym:hOf1n6aZ5bX6",
+        "175.29.91.113:54642:oeermqym:hOf1n6aZ5bX6",
+        "175.29.72.79:60577:oeermqym:hOf1n6aZ5bX6",
+        "175.29.79.44:64245:oeermqym:hOf1n6aZ5bX6",
+        "175.29.76.234:50656:oeermqym:hOf1n6aZ5bX6"
+    ]
 
     proxies_list = []
-    if proxy_user and proxy_pass:
-        base_proxy_urls = [
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8001",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8002",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8003",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8004",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8005",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8006",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8007",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8008",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8009",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8010",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8011",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8012",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8013",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8014",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8015",
-        ]
-        for url in base_proxy_urls:
-            proxies_list.append({'http': url, 'https': url})
-    else:
-        logger.warning("Proxy credentials (PROXY_USER, PROXY_PASS) not set. Attempting without proxies or with unauthenticated proxies if any were previously defined.")
-        # Optionally, you could define a fallback to unauthenticated proxies here if you still had some
-        # proxies_list = [ {'http': 'http://some_open_proxy.com:port', ...} ]
-        pass # Continue without authenticated proxies if credentials are not set
-
+    for proxy_string in raw_proxies:
+        try:
+            parts = proxy_string.split(':')
+            ip, port, user, password = parts[0], parts[1], parts[2], parts[3]
+            auth_proxy_url = f"http://{user}:{password}@{ip}:{port}"
+            proxies_list.append({'http': auth_proxy_url, 'https': auth_proxy_url})
+        except IndexError:
+            logger.warning(f"Skipping malformed proxy string: {proxy_string}")
+            continue
+    
     chosen_proxy = None
     if proxies_list:
         chosen_proxy = random.choice(proxies_list)
-        logger.info(f"Attempting to use proxy: {chosen_proxy['http'].split('@')[-1]}") # Log proxy host without credentials
+        logger.info(f"Attempting to use proxy: {chosen_proxy['http'].split('@')[-1]}") 
     else:
-        logger.info("No proxies configured or credentials missing.")
+        logger.info("No valid proxies configured from the provided list.")
 
     try:
         logger.info(f"Fetching transcript for video ID: {video_id} using proxy: {chosen_proxy['http'].split('@')[-1] if chosen_proxy else 'None'}")
@@ -166,41 +200,77 @@ def get_transcript_json(): # This function name is now a bit confusing given the
     if not video_id:
         return jsonify({'error': 'Invalid YouTube URL or could not extract video ID'}), 400
 
-    # Get proxy credentials from environment variables
-    proxy_user = os.environ.get('PROXY_USER')
-    proxy_pass = os.environ.get('PROXY_PASS')
+    # New list of proxies with embedded credentials
+    raw_proxies = [
+        "175.29.65.78:64232:oeermqym:hOf1n6aZ5bX6",
+        "175.29.64.223:64091:oeermqym:hOf1n6aZ5bX6",
+        "175.29.95.44:49449:oeermqym:hOf1n6aZ5bX6",
+        "175.29.76.202:49651:oeermqym:hOf1n6aZ5bX6",
+        "175.29.80.86:64194:oeermqym:hOf1n6aZ5bX6",
+        "175.29.81.220:64481:oeermqym:hOf1n6aZ5bX6",
+        "175.29.84.162:59986:oeermqym:hOf1n6aZ5bX6",
+        "175.29.86.100:59888:oeermqym:hOf1n6aZ5bX6",
+        "175.29.85.51:57137:oeermqym:hOf1n6aZ5bX6",
+        "175.29.90.121:50603:oeermqym:hOf1n6aZ5bX6",
+        "175.29.87.126:51968:oeermqym:hOf1n6aZ5bX6",
+        "175.29.91.17:55051:oeermqym:hOf1n6aZ5bX6",
+        "175.29.65.35:60231:oeermqym:hOf1n6aZ5bX6",
+        "175.29.75.90:63029:oeermqym:hOf1n6aZ5bX6",
+        "175.29.80.22:49754:oeermqym:hOf1n6aZ5bX6",
+        "175.29.78.106:52075:oeermqym:hOf1n6aZ5bX6",
+        "175.29.88.109:53175:oeermqym:hOf1n6aZ5bX6",
+        "175.29.65.103:64765:oeermqym:hOf1n6aZ5bX6",
+        "175.29.71.93:59859:oeermqym:hOf1n6aZ5bX6",
+        "175.29.83.187:58276:oeermqym:hOf1n6aZ5bX6",
+        "175.29.68.252:49953:oeermqym:hOf1n6aZ5bX6",
+        "175.29.95.191:59263:oeermqym:hOf1n6aZ5bX6",
+        "175.29.79.9:50882:oeermqym:hOf1n6aZ5bX6",
+        "175.29.64.58:49211:oeermqym:hOf1n6aZ5bX6",
+        "175.29.76.119:62729:oeermqym:hOf1n6aZ5bX6",
+        "175.29.95.80:61187:oeermqym:hOf1n6aZ5bX6",
+        "175.29.92.86:57295:oeermqym:hOf1n6aZ5bX6",
+        "175.29.95.47:60149:oeermqym:hOf1n6aZ5bX6",
+        "175.29.69.66:57669:oeermqym:hOf1n6aZ5bX6",
+        "175.29.90.168:58776:oeermqym:hOf1n6aZ5bX6",
+        "175.29.77.245:61241:oeermqym:hOf1n6aZ5bX6",
+        "175.29.93.35:57726:oeermqym:hOf1n6aZ5bX6",
+        "175.29.68.126:58122:oeermqym:hOf1n6aZ5bX6",
+        "175.29.86.61:51816:oeermqym:hOf1n6aZ5bX6",
+        "175.29.86.59:62698:oeermqym:hOf1n6aZ5bX6",
+        "175.29.76.149:49778:oeermqym:hOf1n6aZ5bX6",
+        "175.29.89.118:62068:oeermqym:hOf1n6aZ5bX6",
+        "175.29.85.248:60123:oeermqym:hOf1n6aZ5bX6",
+        "175.29.75.150:65157:oeermqym:hOf1n6aZ5bX6",
+        "175.29.64.122:55021:oeermqym:hOf1n6aZ5bX6",
+        "175.29.75.33:53083:oeermqym:hOf1n6aZ5bX6",
+        "175.29.75.166:53564:oeermqym:hOf1n6aZ5bX6",
+        "175.29.68.29:55691:oeermqym:hOf1n6aZ5bX6",
+        "175.29.87.60:55796:oeermqym:hOf1n6aZ5bX6",
+        "175.29.95.92:62772:oeermqym:hOf1n6aZ5bX6",
+        "175.29.66.15:63821:oeermqym:hOf1n6aZ5bX6",
+        "175.29.91.113:54642:oeermqym:hOf1n6aZ5bX6",
+        "175.29.72.79:60577:oeermqym:hOf1n6aZ5bX6",
+        "175.29.79.44:64245:oeermqym:hOf1n6aZ5bX6",
+        "175.29.76.234:50656:oeermqym:hOf1n6aZ5bX6"
+    ]
 
     proxies_list = []
-    if proxy_user and proxy_pass:
-        base_proxy_urls = [
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8001",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8002",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8003",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8004",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8005",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8006",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8007",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8008",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8009",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8010",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8011",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8012",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8013",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8014",
-            f"http://{proxy_user}:{proxy_pass}@isp.oxylabs.io:8015",
-        ]
-        for url in base_proxy_urls:
-            proxies_list.append({'http': url, 'https': url})
-    else:
-        logger.warning("Proxy credentials (PROXY_USER, PROXY_PASS) not set for JSON endpoint. Attempting without proxies.")
-        pass
+    for proxy_string in raw_proxies:
+        try:
+            parts = proxy_string.split(':')
+            ip, port, user, password = parts[0], parts[1], parts[2], parts[3]
+            auth_proxy_url = f"http://{user}:{password}@{ip}:{port}"
+            proxies_list.append({'http': auth_proxy_url, 'https': auth_proxy_url})
+        except IndexError:
+            logger.warning(f"Skipping malformed proxy string for JSON endpoint: {proxy_string}")
+            continue
     
     chosen_proxy = None
     if proxies_list:
         chosen_proxy = random.choice(proxies_list)
         logger.info(f"Attempting to use proxy: {chosen_proxy['http'].split('@')[-1]} for JSON endpoint")
     else:
-        logger.info("No proxies configured or credentials missing for JSON endpoint.")
+        logger.info("No valid proxies configured from the provided list for JSON endpoint.")
 
     try:
         logger.info(f"Fetching transcript for video ID: {video_id} for JSON endpoint using proxy: {chosen_proxy['http'].split('@')[-1] if chosen_proxy else 'None'}")
