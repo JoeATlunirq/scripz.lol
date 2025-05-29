@@ -1,0 +1,4 @@
+Flask
+Flask-CORS
+youtube-transcript-api
+# Force Vercel to rebuild dependencies
