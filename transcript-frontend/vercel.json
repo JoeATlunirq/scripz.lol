@@ -20,7 +20,6 @@
       "dest": "api/index.js"
     },
     {
-      "src": "/(.*)",
       "handle": "filesystem"
     },
     {
