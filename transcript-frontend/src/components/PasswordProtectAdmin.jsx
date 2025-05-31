@@ -19,25 +19,20 @@ const PasswordProtectAdmin = ({ children }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('[PasswordProtectAdmin] handleSubmit called. Input:', passwordInput);
     if (passwordInput === ADMIN_PASSWORD) {
-      console.log('[PasswordProtectAdmin] Admin Page Password CORRECT. Setting isAuthenticated to true.');
       setIsAuthenticated(true);
       setError('');
       if (!ENV_PASSWORD_ADMIN) {
+        // This console.warn can stay as it's a setup warning, not a password log
         console.warn('Admin Panel Password is using the default fallback. Set VITE_ADMIN_PASSWORD in your .env file for production.');
       }
     } else {
-      console.log('[PasswordProtectAdmin] Admin Page Password INCORRECT.');
       setError('Incorrect admin password.');
       setPasswordInput('');
     }
   };
 
-  console.log('[PasswordProtectAdmin] Current isAuthenticated state:', isAuthenticated);
-
   if (isAuthenticated) {
-    console.log('[PasswordProtectAdmin] Rendering children (AdminPanel).');
     return <>{children}</>;
   }
 
