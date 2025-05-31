@@ -19,16 +19,24 @@ body {
 }
 
 #root {
-  width: 100%;
-  max-width: 800px;
-  margin: 20px;
-  padding: 35px;
-  background-color: rgba(255, 255, 255, 0.9); /* Lighter, more opaque container */
-  border-radius: 16px; /* Slightly more rounded */
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); /* Softer, more modern shadow */
+  width: 90%; /* Use percentage for better responsiveness on smaller screens */
+  max-width: 780px; /* Reduced max-width for a more minimized feel */
+  margin: 20px auto; 
+  padding: 25px 30px; /* Slightly reduced padding */
+  background-color: rgba(255, 255, 255, 0.92); /* Slightly more opaque for readability */
+  border-radius: 16px; 
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12); /* Adjusted shadow */
   display: flex;
   flex-direction: column;
-  gap: 25px;
+  gap: 20px; /* Slightly reduced gap */
+}
+
+/* #root styles when on the Admin page (larger, old settings) */
+body.admin-view-active #root {
+  max-width: 980px; /* Or your preferred previous larger max-width */
+  padding: 35px 40px; /* Previous larger padding */
+  gap: 25px; /* Previous larger gap */
+  /* width: 100%; /* Can be kept or removed if max-width + margin auto handles centering well */
 }
 
 .title {
@@ -116,6 +124,15 @@ input[type="text"]:focus {
   color: #333;
   overflow-y: auto;
   max-height: 350px;
+  margin-bottom: 15px; /* Add some space below the transcript box before actions */
+  padding-top: 15px; /* Add some padding to ensure content is below action icons if they are positioned absolutely or very close */
+  position: relative; /* Added for positioning child elements */
+}
+
+.transcript-display:hover .transcript-actions {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(0, 0); /* Bring back to original position on hover */
 }
 
 .transcript-display.loading,
@@ -126,7 +143,50 @@ input[type="text"]:focus {
   font-style: italic;
   color: #888;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Revert font for status messages */
+  position: relative; /* Needed for pseudo-element positioning if used for spinner */
+  animation: pulse-text 1.5s infinite ease-in-out;
 }
+
+@keyframes pulse-text {
+  0% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.7;
+  }
+}
+
+/* Alternative: Simple CSS Spinner (if preferred over text pulse) */
+/* You would add a ::before pseudo-element to .transcript-display.loading */
+/*
+.transcript-display.loading::before {
+  content: '';
+  display: block;
+  width: 30px;
+  height: 30px;
+  margin: 0 auto 10px auto; // Center it above the text
+  border: 4px solid #f3f3f3; // Light grey
+  border-top: 4px solid #e74c3c; // Accent color
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+*/
+
+/* Ensure the loading text itself is still visible and centered if using spinner */
+/* .transcript-display.loading {
+  display: flex;
+  flex-direction: column; // if using spinner above text
+  justify-content: center;
+  align-items: center;
+} */
 
 .transcript-display.error {
   color: #e74c3c; 
@@ -137,7 +197,7 @@ input[type="text"]:focus {
   color: #777;
   text-align: center;
   margin-top: 0px;
-  margin-bottom: 10px;
+  margin-bottom: 5px; /* Reduce if transcript-actions are pulled up close */
 }
 
 /* Styling for the informational sections */
@@ -199,3 +259,576 @@ input[type="text"]:focus {
    Usually, not using the elements that use this animation is sufficient. 
    If it's still causing issues, you might need to find where it's applied 
    and override that specific element's animation property to 'none'. */
+
+/* API Docs Page Specific Styles */
+.api-docs-page-wrapper {
+  padding: 20px; /* Add padding to the wrapper */
+  margin: 0 auto; /* Center it if max-width is less than 100% */
+  max-width: 900px; /* Max width for the content area */
+  /* The #root already has a light bg, so this wrapper doesn't need its own, 
+     allowing the page background to show around the #root container. 
+     If #root was transparent, we'd need a background here or on body. */
+}
+
+.api-docs-card {
+  background-color: #ffffff; /* White card background */
+  border: 1px solid #e0e0e0; /* Light border for the card */
+  padding: 25px 30px; /* More padding */
+  margin-bottom: 30px; /* Space between cards */
+  border-radius: 12px; /* Consistent with other cards/inputs */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07); /* Softer shadow for cards */
+}
+
+.api-endpoint-title {
+  font-size: 1.8rem; /* Prominent endpoint title */
+  color: #e74c3c; /* Accent color */
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-weight: 600;
+  border-bottom: 2px solid #f0f0f0; /* Subtle separator */
+  padding-bottom: 10px;
+}
+
+.api-docs-card p,
+.api-docs-card ul,
+.api-docs-card li {
+  color: #444; /* Darker grey for better readability on white */
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.api-docs-card strong {
+  color: #2c3e50; /* Dark blue/grey for strong tags */
+  font-weight: 600;
+}
+
+.api-docs-card code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  color: #e74c3c; /* Accent color for inline code */
+  background-color: #f9f9f9; /* Very light grey for inline code bg */
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.api-response-title {
+  font-size: 1.2rem;
+  color: #333;
+  margin-top: 25px;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.code-block-docs {
+  background-color: #f7f7f9; /* Light grey background for code blocks */
+  border: 1px solid #e0e4e8;
+  padding: 15px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+
+.code-block-docs code {
+  background-color: transparent; /* Reset for code inside pre */
+  color: #2d3748; /* Darker text for code blocks */
+  padding: 0;
+  font-size: 0.9rem; /* Slightly smaller for code blocks */
+  white-space: pre-wrap; /* Ensure long lines wrap */
+  word-break: break-all; /* Break long words/strings if necessary */
+}
+
+.api-docs-card ul {
+  list-style-type: disc; /* Standard bullets */
+  padding-left: 25px;
+}
+
+.api-docs-card li {
+  margin-bottom: 8px;
+}
+
+/* Password Protection Page Styles */
+.password-page-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 160px); /* Adjust if you have a fixed header/footer in App.jsx */
+  padding: 20px;
+}
+
+.password-protect-card {
+  background-color: rgba(255, 255, 255, 0.95); /* Slightly more opaque than main container for focus */
+  border: 1px solid #e0e0e0; 
+  padding: 35px 45px; /* Generous padding */
+  border-radius: 16px; 
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); /* Consistent shadow */
+  width: 100%;
+  max-width: 500px; /* Max width for the password card */
+  text-align: center;
+}
+
+.password-card-title {
+  font-size: 2.2rem; /* Prominent title */
+  color: #e74c3c; /* Accent color */
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-weight: 700;
+}
+
+.password-card-text {
+  color: #555; /* Softer dark grey */
+  font-size: 1.1rem;
+  line-height: 1.7;
+  margin-bottom: 30px;
+}
+
+.password-card-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Space between input and button */
+  margin-bottom: 25px;
+}
+
+.password-card-input {
+  flex-grow: 1;
+  padding: 14px 20px;
+  font-size: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background-color: #f9f9f9;
+  color: #333;
+  outline: none;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  text-align: left; /* Align placeholder text to left */
+}
+
+.password-card-input::placeholder {
+  color: #aaa;
+}
+
+.password-card-input:focus {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.1);
+}
+
+/* Re-using .button styles, but adding specific class for potential overrides or specific adjustments */
+.password-card-button {
+  width: 100%; /* Make button full width of its container */
+}
+
+.discord-button-password-page {
+  display: inline-flex; /* Use inline-flex */
+  align-items: center; /* Vertically align icon and text */
+  justify-content: center; /* Center content within the button */
+  background-color: #5865F2; /* Discord brand color */
+  margin-top: 20px; /* Space above the Discord button */
+  padding: 12px 20px;
+}
+
+.discord-button-password-page:hover {
+  background-color: #4752C4; /* Darker Discord on hover */
+}
+
+.password-card-error {
+  color: #e74c3c; /* Use accent color for error */
+  font-weight: 500;
+  margin-top: 10px;
+  font-size: 0.95rem;
+}
+
+/* Admin Panel General Styles */
+.admin-panel-wrapper {
+  padding: 10px 0; /* Reduce padding on wrapper if #root has enough */
+  max-width: 100%; /* Allow it to fill the new #root width */
+  margin: 0 auto; /* It's already inside #root which is centered */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Consistent font */
+}
+
+.admin-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  /* Match title style from main page for consistency */
+}
+
+.admin-panel-header .title {
+  font-size: 2.6rem; /* Consistent with .title */
+  color: #2c3e50; /* Consistent with .title */
+  text-align: left; /* Align to left in header */
+  margin-bottom: 0;
+  font-weight: 700;
+}
+
+/* Admin Cards: Password Prompt, Form, Table */
+.admin-password-prompt-wrapper .admin-password-prompt-card, /* Target specifically */
+.admin-form-card,
+.admin-table-card {
+  background-color: #ffffff; /* White card background like ApiDocs */
+  border: 1px solid #e0e0e0; /* Light border */
+  padding: 30px 35px; /* More generous padding */
+  margin-bottom: 30px; 
+  border-radius: 12px; 
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07); /* Softer shadow */
+  margin-left: auto; /* Center the cards if admin-panel-wrapper is wider */
+  margin-right: auto;
+  max-width: 680px; /* Slightly reduced max-width for inner cards */
+}
+
+.admin-password-prompt-wrapper {
+  max-width: 550px; /* Slightly wider for the password prompt */
+  margin: 60px auto; /* More vertical margin for standalone prompt */
+}
+
+/* Titles within Admin Cards */
+.admin-password-prompt-card .password-card-title, /* More specific selector for password title */
+.admin-card-title {
+  font-size: 1.8rem; /* Consistent with .api-endpoint-title */
+  color: #e74c3c;    /* Accent color */
+  margin-top: 0;
+  margin-bottom: 25px;
+  font-weight: 600;
+  border-bottom: 2px solid #f0f0f0; /* Subtle separator */
+  padding-bottom: 15px;
+}
+
+.admin-password-prompt-card .password-card-title {
+  text-align: center; /* Center title in password prompt */
+}
+
+.admin-password-prompt-card .password-card-text {
+  color: #444; 
+  font-size: 1rem; 
+  line-height: 1.7;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+/* Admin Form Styling (inside .admin-form-card) */
+.admin-form .form-field {
+  margin-bottom: 22px;
+}
+
+.admin-form .form-field label {
+  display: block;
+  font-weight: 600; /* Bolder labels */
+  margin-bottom: 8px;
+  color: #333; /* Darker label color */
+  font-size: 0.95rem;
+}
+
+.admin-input, 
+.admin-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 15px;
+  border: 1px solid #ccc;
+  background-color: #fdfdfd; 
+  color: #333;
+  border-radius: 8px; 
+  font-size: 0.95rem;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.admin-input::placeholder,
+.admin-textarea::placeholder {
+  color: #999;
+}
+
+.admin-input:focus, 
+.admin-textarea:focus {
+  outline: none;
+  border-color: #e74c3c; /* Accent color on focus */
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.15); /* Slightly more visible focus shadow */
+}
+
+.admin-textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.form-field-hint {
+    display: block;
+    font-size: 0.85rem; /* Slightly larger hint */
+    color: #666; /* Darker hint text */
+    margin-top: 6px;
+}
+
+.form-field-checkbox {
+  display: flex;
+  align-items: center;
+  margin-top: 15px;
+  margin-bottom: 25px;
+}
+
+.form-field-checkbox input[type="checkbox"] {
+  margin-right: 10px;
+  width: 20px; /* Larger checkbox */
+  height: 20px;
+  accent-color: #e74c3c; /* Accent color */
+  cursor: pointer;
+}
+
+.form-field-checkbox label {
+  margin-bottom: 0; 
+  font-weight: normal;
+  color: #444; /* Darker label text for checkbox */
+  cursor: pointer;
+}
+
+/* Buttons in Admin Panel */
+.admin-password-prompt-card .password-card-button,
+.admin-button-submit {
+  /* Use existing .button styles for base, then add specifics */
+  width: 100%; /* Full width for main action buttons in forms */
+  padding: 12px 25px !important; /* Consistent padding */
+  font-size: 1.05rem !important;
+}
+
+.admin-panel-header .button-secondary, /* For "Clear/Change API Password" */
+.admin-panel-wrapper > div[style*="text-align: center"] > .button-secondary /* For "Back to Main Site" */
+{
+  padding: 10px 20px !important; /* Slightly smaller for secondary actions */
+  font-size: 0.95rem !important;
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+}
+.admin-panel-header .button-secondary:hover,
+.admin-panel-wrapper > div[style*="text-align: center"] > .button-secondary:hover {
+  background-color: #5a6268 !important;
+}
+
+/* Admin Table Styling (inside .admin-table-card) */
+.table-responsive-wrapper {
+  overflow-x: auto; 
+  max-height: 400px; /* Reduced max-height for the table area */
+  overflow-y: auto;  
+  margin-top: 10px; 
+  border: 1px solid #e0e0e0; 
+  border-radius: 6px; 
+}
+
+.api-keys-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.api-keys-table th,
+.api-keys-table td {
+  padding: 12px 10px; 
+  text-align: left;
+  border-bottom: 1px solid #e8e8e8; /* Slightly lighter row separator */
+  vertical-align: middle;
+}
+
+.api-keys-table tr:last-child td {
+    border-bottom: none; /* Remove border from last row's cells */
+}
+
+.api-keys-table th {
+  background-color: #f5f5f5; /* Slightly darker header for more contrast */
+  font-weight: 600;
+  color: #2c3e50; /* Darker, professional blue/grey for header text */
+  white-space: nowrap;
+}
+
+.api-keys-table td {
+  color: #444; /* Darker text for data cells */
+}
+
+.api-keys-table tr:hover td {
+  background-color: #f5f5f5; /* Subtle hover for table rows */
+}
+
+.api-key-cell {
+  cursor: pointer;
+  word-break: normal; /* Prevent breaking mid-UUID unless absolutely necessary */
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  font-size: 0.85rem;
+}
+
+.api-key-cell:hover {
+  color: #e74c3c; /* Accent color on hover */
+}
+
+.api-key-suffix {
+  color: #777; 
+  font-size: 0.9em; /* Relative to parent .api-key-cell */
+  margin-left: 3px;
+}
+
+/* Action Buttons in Table - already styled well, minor consistency check */
+.button-small {
+  padding: 6px 12px !important; /* Slightly adjusted padding */
+  font-size: 0.8rem !important; /* Adjusted font size */
+  margin-right: 6px;
+}
+
+.button-copy {
+  background-color: var(--primary-accent, #007bff) !important; /* Example: A blue color */
+  border-color: var(--primary-accent-dark, #0056b3) !important;
+  color: white !important;
+}
+
+.button-copy:hover {
+  background-color: var(--primary-accent-dark, #0056b3) !important;
+}
+
+/* Message Styles (reusing from ApiDocs if possible, ensuring consistency) */
+.action-message {
+  padding: 12px 18px;
+  margin-bottom: 25px;
+  border-radius: 8px;
+  font-size: 1rem; /* Ensure it's readable */
+  font-weight: 500; /* Slightly bolder */
+  text-align: center;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.success-message, /* General success messages will now use the green style */
+.action-message.copy-success {
+    background-color: #e6fff2; /* Light green background */
+    color: #006429;    /* Dark green text */
+    border: 1px solid #00b34a; /* Green border */
+}
+
+.error-message {
+  background-color: #ffe6e6; 
+  color: #990000; 
+  border-color: #ff4d4d;
+}
+
+/* Remove some specific styles for password prompt if they conflict */
+.admin-password-prompt-card .password-card-form .admin-input {
+  margin-bottom: 20px !important; /* Keep existing good spacing */
+}
+
+/* Ensure the main background image and body settings from the top of App.css are respected */
+/* The .admin-panel-wrapper itself won't have a background, letting #root or body show */
+
+/* Override any too-dark styles from general dark theme if needed for admin panel readability on white cards */
+.admin-panel-wrapper ::selection {
+  background-color: #e74c3c; /* Accent color for text selection */
+  color: white;
+}
+
+/* Final check on .info-card base style if it's still used directly in AdminPanel, or if all cards now have admin-specific classes */
+/* Assuming all admin cards use .admin-form-card, .admin-table-card, etc. */
+
+/* Modal Styles for Edit Key */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6); /* Darker backdrop */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* Ensure it's on top */
+  padding: 20px;
+}
+
+.modal-content {
+  /* Uses .info-card and .admin-form-card for base styling */
+  width: 100%;
+  max-width: 600px; /* Max width for the modal content */
+  position: relative; /* For potential close button positioning if added later */
+  /* box-shadow: 0 10px 40px rgba(0,0,0,0.25); /* Stronger shadow for modal */
+  /* animation: modal-fade-in 0.3s ease-out; */ /* Optional: fade-in animation */
+}
+
+/* Optional: Fade-in animation for modal */
+/* @keyframes modal-fade-in {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+} */
+
+.modal-content .admin-card-title {
+  font-size: 1.6rem; /* Slightly smaller title within modal if needed */
+  margin-bottom: 20px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end; /* Align buttons to the right */
+  gap: 15px; /* Space between buttons */
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0; /* Separator line above actions */
+}
+
+.modal-actions .button {
+  width: auto; /* Override full width for modal buttons */
+  padding: 10px 25px !important; /* Adjust padding if needed */
+}
+
+.admin-form-card {
+  max-width: 700px; /* Existing max-width */
+  /* ... other specific styles for form card if any ... */
+}
+
+.admin-table-card {
+  max-width: 700px; /* Make same as form card for consistency */
+  /* ... other existing styles for table card ... */
+}
+
+.api-keys-table td:last-child {
+  white-space: nowrap; /* Try to prevent action buttons from wrapping */
+}
+
+.api-keys-table .button-small {
+  padding: 6px 12px !important; 
+  font-size: 0.8rem !important; 
+  margin-right: 6px;
+}
+
+.api-keys-table .button-small:last-child {
+  margin-right: 0;
+}
+
+.transcript-actions {
+  position: absolute; /* Changed for positioning within parent */
+  top: 10px;           /* Position from top */
+  right: 10px;         /* Position from right */
+  display: flex;
+  gap: 8px; /* Slightly reduced gap */
+  /* margin-bottom, margin-top, margin-left removed as it's absolutely positioned */
+  /* height removed, let content define height */
+  align-items: center;
+  opacity: 0; /* Hidden by default */
+  visibility: hidden; /* Hidden by default */
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out, transform 0.3s ease-in-out;
+  background-color: rgba(250, 250, 250, 0.85); /* Optional: slight background for actions */
+  padding: 5px;
+  border-radius: 5px;
+  z-index: 10; /* Ensure it's above the text */
+  transform: translateY(-10px); /* Start slightly above for a subtle slide-in */
+}
+
+.icon-button {
+  background-color: transparent !important; 
+  border: 1px solid transparent !important; 
+  color: #555 !important; 
+  padding: 5px !important; /* Adjusted padding for potentially larger SVGs */
+  font-size: 1.2rem !important; /* Adjusted icon size, react-icons might render differently */
+  line-height: 1; 
+  border-radius: 5px;
+  transition: color 0.2s ease, background-color 0.2s ease;
+  display: inline-flex; /* Helps with vertical alignment of SVG icons */
+  align-items: center; /* Helps with vertical alignment of SVG icons */
+  justify-content: center; /* Helps with horizontal alignment of SVG icons */
+}
+
+.icon-button:hover {
+  color: #e74c3c !important; /* Accent color on hover */
+  background-color: rgba(0,0,0,0.05) !important; /* Subtle hover background */
+}
+
+.icon-button:active {
+  transform: translateY(1px);
+}

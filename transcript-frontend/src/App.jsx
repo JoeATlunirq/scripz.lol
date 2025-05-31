@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import './App.css'
+import { FaCopy, FaDownload, FaCheck } from 'react-icons/fa'
 
 function App() {
   const [videoUrl, setVideoUrl] = useState('')
@@ -7,31 +8,25 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [videoInfo, setVideoInfo] = useState({ id: '', lang: '' })
+  const [showCopiedIndicator, setShowCopiedIndicator] = useState(false)
 
-  const envApiBase = import.meta.env.VITE_API_BASE_URL
-  let fullFetchUrl
-
-  if (envApiBase && envApiBase !== '/') {
-    // If VITE_API_BASE_URL is a full URL (e.g., http://localhost:5001 or a specific staging/prod backend URL)
-    fullFetchUrl = `${envApiBase}/api/transcript`
-  } else {
-    // If VITE_API_BASE_URL is '/' (for Vercel production relative paths) or undefined (fallback to relative for safety)
-    // This ensures it becomes /api/transcript, which is relative to the current domain root.
-    fullFetchUrl = '/api/transcript'
-  }
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002'
 
   const fetchTranscript = async () => {
     if (!videoUrl) {
       setError('Please enter a YouTube video URL.')
+      setTranscript('')
+      setVideoInfo({ id: '', lang: '' })
       return
     }
     setIsLoading(true)
     setError('')
     setTranscript('')
     setVideoInfo({ id: '', lang: '' })
+    setShowCopiedIndicator(false)
 
     try {
-      const response = await fetch(fullFetchUrl, {
+      const response = await fetch(`${API_BASE_URL}/api/transcript`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -54,9 +49,37 @@ function App() {
     setIsLoading(false)
   }
 
+  const handleCopyTranscript = () => {
+    if (transcript) {
+      navigator.clipboard.writeText(transcript)
+        .then(() => {
+          setShowCopiedIndicator(true)
+          setTimeout(() => setShowCopiedIndicator(false), 1500) // Show indicator for 1.5 seconds
+        })
+        .catch(err => {
+          console.error('Failed to copy: ', err)
+          // Optionally, provide visual feedback for error too
+        })
+    }
+  }
+
+  const handleDownloadTranscript = () => {
+    if (transcript && videoInfo.id) {
+      const filename = `transcript_${videoInfo.id}.txt`
+      const blob = new Blob([transcript], { type: 'text/plain;charset=utf-8' })
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(link.href)
+    }
+  }
+
   return (
     <>
-      <h1 className="title">Quick YT Transcripts</h1>
+      <h1 className="title">Scripz - Quick YT Transcripts</h1>
       <p className="tagline">Paste a YouTube link. Get the full text in seconds. Clean & simple.</p>
       
       <div className="input-area">
@@ -71,9 +94,7 @@ function App() {
         </button>
       </div>
 
-      {error && <div className="transcript-display error">Error: {error}</div>}
-      
-      {transcript && videoInfo.id && (
+      {transcript && videoInfo.id && !error && (
         <div className="video-info">
           Displaying transcript for Video ID: {videoInfo.id} (Language: {videoInfo.lang})
         </div>
@@ -83,15 +104,36 @@ function App() {
         className={`transcript-display ${
           isLoading ? 'loading' : ''
         } ${
+          error ? 'error' : ''
+        } ${
           !isLoading && !transcript && !error ? 'placeholder' : '' 
         }`}
       >
+        {transcript && !error && (
+          <div className="transcript-actions">
+            <button 
+              className="button icon-button" 
+              onClick={handleCopyTranscript}
+              title={showCopiedIndicator ? "Copied!" : "Copy Transcript"}
+            >
+              {showCopiedIndicator ? <FaCheck /> : <FaCopy />}
+            </button>
+            <button 
+              className="button icon-button" 
+              onClick={handleDownloadTranscript}
+              title="Download Transcript (.txt)"
+            >
+              <FaDownload />
+            </button>
+          </div>
+        )}
+
         {isLoading 
           ? 'Loading transcript...' 
-          : transcript 
-            ? transcript 
-            : error 
-              ? '' // Error is displayed above
+          : error 
+            ? `Error: ${error}`
+            : transcript 
+              ? transcript 
               : 'Transcript will appear here...'}
       </div>
 
@@ -101,7 +143,7 @@ function App() {
           <ol>
             <li>Paste your YouTube video URL.</li>
             <li>Click "Get Transcript".</li>
-            <li>Read or copy your text.</li>
+            <li>Read, copy, or download your text.</li>
           </ol>
         </div>
         
@@ -111,6 +153,7 @@ function App() {
             <li><strong>Fast:</strong> Transcripts generated in moments.</li>
             <li><strong>Simple:</strong> Easy to use, no fuss.</li>
             <li><strong>Direct:</strong> Get the core text of videos.</li>
+            <li><strong>Copy & Download:</strong> Easily save your transcripts.</li>
           </ul>
         </div>
       </div>
