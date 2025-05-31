@@ -7,7 +7,6 @@ const DEFAULT_ADMIN_PASSWORD = 'supersecretadmin'; // Fallback for local dev if 
 const ADMIN_PASSWORD = ENV_PASSWORD_ADMIN || DEFAULT_ADMIN_PASSWORD;
 
 // Log the password source for debugging
-console.log('[PasswordProtectAdmin] Target Admin Page Password:', ADMIN_PASSWORD);
 if (!ENV_PASSWORD_ADMIN) {
   console.warn('[PasswordProtectAdmin] Using default admin page password because VITE_ADMIN_PASSWORD is not set.');
 }
