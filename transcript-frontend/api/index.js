@@ -3,15 +3,9 @@ import cors from 'cors';
 import { getSubtitles as getSubtitlesFromScraper } from 'youtube-captions-scraper';
 import { YoutubeTranscript } from 'youtube-transcript';
 import axios from 'axios'; // Used for RapidAPI now
-import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js'; // Added Supabase client
-
-// Configure dotenv to load API_KEY from .env file in the current directory (api/)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 // Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;
