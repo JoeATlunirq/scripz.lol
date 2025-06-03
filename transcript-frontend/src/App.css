@@ -832,3 +832,25 @@ input[type="text"]:focus {
 .icon-button:active {
   transform: translateY(1px);
 }
+
+.footer-links {
+  text-align: center;
+  margin-top: 40px; /* Increased top margin for more separation */
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0; /* Lighter border, adjust to your theme */
+  margin-bottom: 20px;
+}
+
+.footer-link {
+  color: #e74c3c; /* Your theme's accent color */
+  text-decoration: none; /* Remove underline by default */
+  font-weight: 500;
+  margin: 0 15px; /* Increased margin for more space between links */
+  padding: 5px 0; /* Add some vertical padding if needed */
+  transition: color 0.2s ease-in-out;
+}
+
+.footer-link:hover {
+  color: #c0392b; /* Darker accent on hover */
+  text-decoration: underline; /* Add underline on hover for clarity */
+}
