@@ -1,9 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import './index.css'; // Assuming this contains global styles
-// import ApiDocs from './ApiDocs.jsx'; // This will be handled by routing in App.jsx
+import ApiDocs from './ApiDocs.jsx'; // UNCOMMENTED/ADDED: ApiDocs must be imported here
+import PrivacyPolicy from './pages/PrivacyPolicy.jsx'; // ADDED: Import PrivacyPolicy
 import PasswordProtectAdmin from './components/PasswordProtectAdmin.jsx'; // For Admin Panel
 import AdminPanel from './components/AdminPanel.jsx'; // The Admin Panel UI
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
@@ -15,8 +15,11 @@ const router = createBrowserRouter([
   },
   {
     path: "/api-docs",
-    // element: <PasswordProtect><ApiDocs /></PasswordProtect>, // Removed PasswordProtect
-    element: <ApiDocs />, // Directly render ApiDocs
+    element: <ApiDocs />, // ApiDocs is used here
+  },
+  {
+    path: "/privacy-policy", // ADDED: Route for Privacy Policy
+    element: <PrivacyPolicy />,
   },
   {
     path: "/admin", // New Admin Route
@@ -30,8 +33,6 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <RouterProvider router={router} />
-    </BrowserRouter>
-  </React.StrictMode>,
+    <RouterProvider router={router} />
+  </React.StrictMode>
 );

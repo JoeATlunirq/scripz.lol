@@ -1,12 +1,10 @@
 import { useState } from 'react'
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import './App.css'
 import { FaCopy, FaDownload, FaCheck } from 'react-icons/fa'
-import ApiDocs from './ApiDocs'
-import PrivacyPolicy from './pages/PrivacyPolicy'
 
-// Component for the main transcript generator page
-function TranscriptGenerator() {
+// This component now represents the content for the main page hosted at "/"
+function App() {
   const [videoUrl, setVideoUrl] = useState('')
   const [transcript, setTranscript] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -174,17 +172,6 @@ function TranscriptGenerator() {
         <Link to="/privacy-policy" className="footer-link">Privacy Policy</Link>
       </div>
     </>
-  )
-}
-
-// Main App component to handle routing
-function App() {
-  return (
-    <Routes>
-      <Route path="/" element={<TranscriptGenerator />} />
-      <Route path="/api-docs" element={<ApiDocs />} />
-      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-    </Routes>
   )
 }
 
