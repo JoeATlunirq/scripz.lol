@@ -47,7 +47,7 @@ const PrivacyPolicy = () => {
         `}
       </style>
       <h1>Privacy Policy for Scripz</h1>
-      <p><strong>Last Updated: [Current Date - Please fill this in]</strong></p>
+      <p><strong>Last Updated: 3 Jun 2025</strong></p>
 
       <p>Welcome to Scripz! This Privacy Policy explains how we collect, use, and disclose information when you use our website (scripz.lol) and our Chrome Extension ("Scripz - YouTube Transcript Viewer").</p>
 
@@ -93,7 +93,7 @@ const PrivacyPolicy = () => {
       <p>We may update this Privacy Policy from time to time. We will notify you of any significant changes by posting the new Privacy Policy on this page and updating the "Last Updated" date. You are advised to review this Privacy Policy periodically for any changes.</p>
 
       <h2>8. Contact Us</h2>
-      <p>If you have any questions about this Privacy Policy, please contact us at: [Provide a contact email or link to a contact form, e.g., contact@scripz.lol - Please fill this in]</p>
+      <p>If you have any questions about this Privacy Policy, please contact us at: joseph@lunirq.ai</p>
 
       <div className="back-link-privacy">
         <Link to="/">Back to Transcript Generator</Link>
