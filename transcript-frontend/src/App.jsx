@@ -1,8 +1,12 @@
 import { useState } from 'react'
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import './App.css'
 import { FaCopy, FaDownload, FaCheck } from 'react-icons/fa'
+import ApiDocs from './ApiDocs'
+import PrivacyPolicy from './pages/PrivacyPolicy'
 
-function App() {
+// Component for the main transcript generator page
+function TranscriptGenerator() {
   const [videoUrl, setVideoUrl] = useState('')
   const [transcript, setTranscript] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -10,7 +14,10 @@ function App() {
   const [videoInfo, setVideoInfo] = useState({ id: '', lang: '' })
   const [showCopiedIndicator, setShowCopiedIndicator] = useState(false)
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002'
+  const envApiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  // If VITE_API_BASE_URL is explicitly defined (e.g., set to "" or "/" in Vercel), use it.
+  // Otherwise (if it's undefined, like when not set in Vercel or during local dev without .env), fallback to localhost.
+  const API_BASE_URL = typeof envApiBaseUrl !== 'undefined' ? envApiBaseUrl : 'http://localhost:5002';
 
   const fetchTranscript = async () => {
     if (!videoUrl) {
@@ -26,7 +33,11 @@ function App() {
     setShowCopiedIndicator(false)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/transcript`, {
+      // Construct the API URL. If API_BASE_URL is "/", this becomes "/api/transcript".
+      // If API_BASE_URL is "", this also becomes "/api/transcript".
+      // If API_BASE_URL is "http://localhost:5002", this becomes "http://localhost:5002/api/transcript".
+      const apiUrl = `${API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL}/api/transcript`;
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -158,10 +169,22 @@ function App() {
         </div>
       </div>
 
-      <div style={{ textAlign: 'center', marginTop: '30px', marginBottom: '10px' }}>
-        <a href="/api-docs" style={{ color: '#e74c3c', textDecoration: 'underline', fontWeight: '500' }}>View API Documentation</a>
+      <div className="footer-links">
+        <Link to="/api-docs" className="footer-link">View API Documentation</Link>
+        <Link to="/privacy-policy" className="footer-link">Privacy Policy</Link>
       </div>
     </>
+  )
+}
+
+// Main App component to handle routing
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<TranscriptGenerator />} />
+      <Route path="/api-docs" element={<ApiDocs />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+    </Routes>
   )
 }
 

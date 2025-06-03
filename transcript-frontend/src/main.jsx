@@ -1,11 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
-import ApiDocs from './ApiDocs.jsx';
-// import PasswordProtect from './components/PasswordProtect.jsx'; // No longer needed for ApiDocs
+import './index.css'; // Assuming this contains global styles
+// import ApiDocs from './ApiDocs.jsx'; // This will be handled by routing in App.jsx
 import PasswordProtectAdmin from './components/PasswordProtectAdmin.jsx'; // For Admin Panel
 import AdminPanel from './components/AdminPanel.jsx'; // The Admin Panel UI
-import './index.css'; // Assuming you might have global styles here
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 const router = createBrowserRouter([
@@ -30,6 +30,8 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <BrowserRouter>
+      <RouterProvider router={router} />
+    </BrowserRouter>
   </React.StrictMode>,
 );

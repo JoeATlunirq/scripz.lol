@@ -523,33 +523,26 @@ app.post('/api/transcript', async (req, res) => {
 });
 
 // Public API endpoint (requires API key)
-app.post('/api/get_transcript', authenticateApiKey, async (req, res) => {
+app.post('/api/get_transcript', async (req, res) => {
     const { video_url } = req.body;
-    const apiKeyData = req.apiKeyData; // API key data from middleware
-    console.log(`API request for /api/get_transcript: ${video_url} using key: ${apiKeyData.client_name}`);
+    console.log(`API request for /api/get_transcript: ${video_url}`);
 
-    // videoId extraction is done in middleware for logging invalid key attempts
-    // and in fetchTranscriptLogic for core logic. Redundant but fine for now.
     const videoId = extractVideoId(video_url);
-    if (!videoId) { // Should ideally be caught by middleware if it needs videoId for logging early
-        // Log this attempt even if video_url is invalid, as an API key was used.
-        await logApiUsage(apiKeyData, req.path, 400, null, 'Invalid video_url in request body');
+    if (!videoId) {
         return res.status(400).json({ error: 'Invalid YouTube URL' });
     }
 
-    const result = await fetchTranscriptLogic(video_url, apiKeyData); // Pass apiKeyData for logging
+    const result = await fetchTranscriptLogic(video_url, null);
 
     if (result.error) {
-        // Logging is handled inside fetchTranscriptLogic for final failure
         return res.status(result.status || 500).json({ error: result.error, details: result.details });
     }
 
-    // Logging for success is handled inside fetchTranscriptLogic
     res.json({
         video_id: result.video_id,
         language: result.language,
         full_text: result.full_text,
-        method: result.method // This can be exposed to API clients if desired
+        method: result.method
     });
 });
 
