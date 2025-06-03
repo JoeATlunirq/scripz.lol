@@ -1,92 +1,155 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #121212; /* Dark fallback */
     background-image: url('images/funny-min.jpg');
     background-size: cover;
     background-position: center center;
-    background-attachment: fixed; /* May not work as expected in small popups, but good to have */
-    color: #e0e0e0;
+    background-attachment: fixed;
     margin: 0;
-    width: 380px; /* Slightly wider for better text display */
+    padding: 10px; /* Add some padding so the container card doesn't touch edges */
+    width: 380px;
     min-height: 250px;
-    max-height: 550px; /* Allow popup to grow but not excessively */
-    display: flex;
-    flex-direction: column;
+    max-height: 580px; /* Max height for the popup */
+    display: flex; /* To help center the container if padding is on body */
+    justify-content: center; /* Center the container horizontally */
+    align-items: center; /* Center the container vertically */
     box-sizing: border-box;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
 }
 
 .container {
-    background-color: rgba(26, 26, 26, 0.85); /* Semi-transparent dark overlay for content */
-    padding: 15px;
-    border-radius: 0; /* Popups usually don't have border radius for the body itself */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    width: 100%; /* Take full width of the padded body */
+    height: 100%; /* Take full height of the padded body */
+    max-height: calc(580px - 20px); /* Adjust for body padding */
+    background-color: rgba(255, 255, 255, 0.92); /* Light, semi-opaque background like #root */
+    border-radius: 16px; /* Rounded corners like #root */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12); /* Shadow like #root */
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    flex-grow: 1;
-    overflow: hidden; /* Prevent container from causing scrollbars, main content will scroll */
+    overflow: hidden; /* Prevent scrollbars on the container itself */
+    box-sizing: border-box;
 }
 
 header h1 {
-    font-size: 1.4em;
-    color: #e74c3c; /* Vibrant Pink/Red from your site */
+    font-size: 1.6em; /* Adjusted size */
+    color: #2c3e50; /* Dark, professional blue/grey like .title */
     text-align: center;
     margin-top: 0;
     margin-bottom: 15px;
-    font-weight: 600;
+    font-weight: 700; /* Bolder like .title */
 }
 
 main {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    overflow-y: auto; /* Allow main content area to scroll */
+    overflow-y: auto; /* Allow main content (message + transcript) to scroll if needed */
+    min-height: 0; /* Fix for flexbox overflow issues in some browsers */
 }
 
 #message {
-    text-align: center;
     padding: 10px 0;
     font-size: 0.95em;
-    color: #f0f0f0; /* Light color for messages */
+    text-align: center;
+    color: #555; /* Softer dark grey for loading messages, like .tagline */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Consistent font */
 }
 
 #message.error {
-    color: #ff6b6b; /* A distinct error color */
-    font-weight: bold;
+    color: #e74c3c !important; /* Vibrant Pink/Red from your site for errors */
+    font-weight: 500;
 }
 
 .transcript-text {
-    background-color: rgba(40, 44, 52, 0.9); /* Darker, slightly transparent background for transcript */
-    padding: 12px 15px;
-    border-radius: 8px;
+    flex-grow: 1; /* Allow transcript text to take available space and push message up */
+    background-color: #fdfdfd; /* Almost white like .transcript-display */
+    padding: 15px 20px;
+    border-radius: 10px; /* Like .transcript-display */
+    border: 1px solid #eee; /* Like .transcript-display */
     font-size: 0.9em;
-    line-height: 1.65;
+    line-height: 1.7; /* Like .transcript-display */
+    color: #333; /* Dark text like .transcript-display */
+    font-family: 'Georgia', serif; /* Match font from .transcript-display */
     white-space: pre-wrap;
     word-wrap: break-word;
-    color: #d0d0d0; /* Lighter text for transcript */
-    flex-grow: 1; /* Allow transcript text to take available space */
     overflow-y: auto; /* Scroll within the transcript box if content overflows */
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 10px; /* Space between message and transcript box */
 }
 
-/* Custom Scrollbar for WebKit browsers (Chrome, Safari) */
+/* Custom Scrollbar for WebKit browsers (Chrome, Safari) - Themed to match light card */
 ::-webkit-scrollbar {
     width: 10px;
 }
 
 ::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.2); /* Darker track */
+    background: rgba(0, 0, 0, 0.05); /* Very light track for light theme */
     border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb {
-    background-color: #e74c3c; /* Accent color for thumb */
+    background-color: #c0c0c0; /* Light grey thumb */
     border-radius: 5px;
-    border: 2px solid rgba(0,0,0,0.2); /* Creates padding around thumb */
+    border: 2px solid rgba(255, 255, 255, 0); /* Transparent border to give padding effect */
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background-color: #c0392b; /* Darker accent on hover */
+    background-color: #a0a0a0; /* Darker grey on hover */
+}
+
+/* Styles for transcript container and actions */
+#transcript-container {
+    position: relative; /* For absolute positioning of actions */
+    flex-grow: 1; /* Allow it to take space */
+    display: flex; /* To make transcript-text take full height if actions are separate */
+    flex-direction: column;
+}
+
+.transcript-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 8px;
+    opacity: 0; /* Hidden by default */
+    visibility: hidden;
+    transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+    background-color: rgba(240, 240, 240, 0.85); /* Light background for actions */
+    padding: 5px;
+    border-radius: 6px;
+    z-index: 10;
+}
+
+#transcript-container:hover .transcript-actions {
+    opacity: 1;
+    visibility: visible;
+}
+
+.icon-button {
+    background-color: transparent;
+    border: 1px solid #ccc;
+    color: #333; /* This will be the SVG fill color */
+    padding: 5px; /* Adjust padding around SVG */
+    /* font-size: 1.1rem; */ /* Font-size not relevant for SVG content */
+    line-height: 1;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    display: inline-flex; /* Helps center SVG */
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-button svg {
+    width: 1em; /* Control SVG size relative to button's font-size (implicit or explicit) */
+    height: 1em;
+    display: block; /* Remove extra space below SVG */
+}
+
+.icon-button:hover {
+    background-color: #e74c3c; /* Accent color from your theme */
+    color: white;
+    border-color: #e74c3c;
+}
+
+.icon-button:active {
+    transform: translateY(1px);
 } 
