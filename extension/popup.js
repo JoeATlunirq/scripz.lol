@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentTranscriptText = ''; // To store the fetched transcript
     let currentVideoId = ''; // To store the video ID for download filename
+    const originalCopyButtonSVG = copyButton.innerHTML; // Store original SVG
 
     function displayMessage(message, isError = false) {
         console.log(`[Scripz Extension] Displaying message: ${message}, isError: ${isError}`);
@@ -53,27 +54,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event Listeners for Copy and Download
     copyButton.addEventListener('click', () => {
         if (currentTranscriptText) {
+            const originalTitle = copyButton.title; // Store original title
             navigator.clipboard.writeText(currentTranscriptText)
                 .then(() => {
-                    // copyButton.textContent = '✅'; // Checkmark - Removed for SVG
-                    const originalTitle = copyButton.title;
-                    copyButton.title = 'Copied!';
-                    // Optional: Add a class for visual feedback
-                    // copyButton.classList.add('copied'); 
+                    copyButton.innerHTML = 'Copied!';
+                    copyButton.title = ''; // Clear title while text is shown
+                    // Optional: Add a class for visual feedback, e.g., copyButton.classList.add('copied-success');
                     setTimeout(() => {
-                        // copyButton.textContent = '📄'; // Revert to original icon - Removed for SVG
-                        copyButton.title = originalTitle;
-                        // copyButton.classList.remove('copied');
+                        copyButton.innerHTML = originalCopyButtonSVG; // Restore SVG
+                        copyButton.title = originalTitle; // Restore original title
+                        // Optional: Remove class, e.g., copyButton.classList.remove('copied-success');
                     }, 1500);
                 })
                 .catch(err => {
                     console.error('[Scripz Extension] Failed to copy transcript:', err);
-                    const originalTitle = copyButton.title;
-                    copyButton.title = 'Failed to copy!';
-                    // copyButton.textContent = '❌'; // Removed for SVG
-                    setTimeout(() => { 
-                        // copyButton.textContent = '📄'; // Removed for SVG
-                        copyButton.title = originalTitle;
+                    copyButton.innerHTML = 'Error!';
+                    copyButton.title = ''; // Clear title while text is shown
+                    // Optional: Add a class for visual feedback, e.g., copyButton.classList.add('copied-error');
+                    setTimeout(() => {
+                        copyButton.innerHTML = originalCopyButtonSVG; // Restore SVG
+                        copyButton.title = originalTitle; // Restore original title
+                        // Optional: Remove class, e.g., copyButton.classList.remove('copied-error');
                     }, 2000);
                 });
         }
