@@ -57,29 +57,54 @@ body.admin-view-active #root {
 
 .input-area {
   display: flex;
+  flex-direction: column; /* Changed to column for overall stacking */
+  gap: 15px;
+  /* align-items: center; Removed, will align sub-div */
+}
+
+.input-row { /* New class for API key and button row */
+  display: flex;
   gap: 15px;
   align-items: center;
 }
 
-input[type="text"] {
+input[type="text"],
+textarea, /* Added textarea */
+input[type="password"] /* Added input[type="password"] */ {
   flex-grow: 1;
-  padding: 14px 20px; /* Increased padding */
+  padding: 14px 20px;
   font-size: 1rem;
-  border: 1px solid #ddd; /* Lighter border */
+  border: 1px solid #ddd;
   border-radius: 10px;
-  background-color: #f9f9f9; /* Very light input field */
+  background-color: #f9f9f9;
   color: #333;
   outline: none;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  box-sizing: border-box; /* Added for consistent sizing */
+  width: 100%; /* Ensure they take full width within their container */
 }
 
-input[type="text"]::placeholder {
+textarea { /* Specific styles for textarea if needed */
+  min-height: 80px; /* Example: give textarea a decent default height */
+  resize: vertical; /* Allow vertical resize */
+}
+
+/* Ensure the button in the input-row doesn't grow excessively */
+.input-row .button {
+  flex-grow: 0;
+}
+
+input[type="text"]::placeholder,
+textarea::placeholder, /* Added textarea */
+input[type="password"]::placeholder /* Added input[type="password"] */ {
   color: #aaa;
 }
 
-input[type="text"]:focus {
-  border-color: #e74c3c; /* Vibrant pink/red for focus */
-  box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.1); /* Softer focus shadow */
+input[type="text"]:focus,
+textarea:focus, /* Added textarea */
+input[type="password"]:focus /* Added input[type="password"] */ {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.1);
 }
 
 .button {

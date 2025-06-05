@@ -1,3 +1,4 @@
+import 'dotenv/config'; // Load .env file contents into process.env
 import express from 'express';
 import cors from 'cors';
 import { getSubtitles as getSubtitlesFromScraper } from 'youtube-captions-scraper';
@@ -523,7 +524,7 @@ app.post('/api/transcript', async (req, res) => {
 });
 
 // Public API endpoint (requires API key)
-app.post('/api/get_transcript', async (req, res) => {
+app.post('/api/get_transcript', authenticateApiKey, async (req, res) => {
     const { video_url } = req.body;
     console.log(`API request for /api/get_transcript: ${video_url}`);
 
@@ -532,7 +533,8 @@ app.post('/api/get_transcript', async (req, res) => {
         return res.status(400).json({ error: 'Invalid YouTube URL' });
     }
 
-    const result = await fetchTranscriptLogic(video_url, null);
+    // req.apiKeyData is populated by the authenticateApiKey middleware
+    const result = await fetchTranscriptLogic(video_url, req.apiKeyData);
 
     if (result.error) {
         return res.status(result.status || 500).json({ error: result.error, details: result.details });
@@ -544,6 +546,87 @@ app.post('/api/get_transcript', async (req, res) => {
         full_text: result.full_text,
         method: result.method
     });
+});
+
+// New Bulk Transcripts Endpoint (requires API key)
+app.post('/api/bulk-transcripts', authenticateApiKey, async (req, res) => {
+    const { video_urls } = req.body;
+
+    if (!Array.isArray(video_urls) || video_urls.length === 0) {
+        return res.status(400).json({ error: 'Please provide a non-empty array of video_urls.' });
+    }
+
+    console.log(`API request for /api/bulk-transcripts: ${video_urls.length} URLs`);
+
+    let allTranscriptsText = '';
+    const failedUrls = [];
+    let successfulCount = 0;
+
+    for (const videoUrl of video_urls) {
+        if (typeof videoUrl !== 'string' || !videoUrl.trim()) {
+            failedUrls.push({ url: videoUrl, error: 'Invalid or empty URL string provided.' });
+            continue;
+        }
+        
+        const videoId = extractVideoId(videoUrl); // For logging/error reporting consistency
+        console.log(`Fetching transcript for: ${videoUrl} (ID: ${videoId || 'N/A'}) in bulk request.`);
+
+        // req.apiKeyData is populated by the authenticateApiKey middleware
+        const result = await fetchTranscriptLogic(videoUrl, req.apiKeyData);
+
+        if (result.full_text) {
+            if (allTranscriptsText.length > 0) {
+                allTranscriptsText += '\n\n';
+            }
+            allTranscriptsText += result.full_text;
+            successfulCount++;
+        } else {
+            console.warn(`Failed to fetch transcript for ${videoUrl} in bulk mode. Error: ${result.error}`);
+            failedUrls.push({ 
+                url: videoUrl, 
+                error: result.error, 
+                details: result.details,
+                videoId: videoId 
+            });
+        }
+    }
+
+    let responseText = '';
+    if (failedUrls.length > 0) {
+        responseText += `Bulk Transcript Fetch Summary:\n`;
+        responseText += `Successfully fetched: ${successfulCount} transcript(s).\n`;
+        responseText += `Failed to fetch: ${failedUrls.length} transcript(s).\n\n`;
+        responseText += `Details for failures:\n`;
+        failedUrls.forEach(failure => {
+            responseText += `-------------------------------------\n`;
+            responseText += `URL: ${failure.url}\n`;
+            if (failure.videoId) responseText += `Video ID: ${failure.videoId}\n`;
+            responseText += `Error: ${failure.error}\n`;
+            if (failure.details && typeof failure.details === 'object') {
+                 responseText += `Details: ${JSON.stringify(failure.details)}\n`;
+            } else if (failure.details) {
+                responseText += `Details: ${failure.details}\n`;
+            }
+        });
+        responseText += `-------------------------------------\n\n`;
+    }
+
+    if (successfulCount > 0) {
+        responseText += allTranscriptsText;
+    } else if (failedUrls.length > 0 && successfulCount === 0) {
+        // All failed, just send the error report as text
+        res.setHeader('Content-Type', 'text/plain');
+        res.setHeader('Content-Disposition', 'attachment; filename="transcript_errors.txt"');
+        return res.status(400).send(responseText); // Use 400 or another appropriate error for partial/total failure
+    } else { // No URLs provided effectively or all were invalid before processing
+        res.setHeader('Content-Type', 'text/plain');
+        res.setHeader('Content-Disposition', 'attachment; filename="transcripts.txt"');
+        return res.status(200).send("No valid video URLs processed or no transcripts found.");
+    }
+    
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Content-Disposition', 'attachment; filename="transcripts.txt"');
+    res.status(200).send(responseText.trim());
 });
 
 // --- ADMIN API KEY MANAGEMENT ENDPOINTS ---
