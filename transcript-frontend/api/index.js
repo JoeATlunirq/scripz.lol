@@ -103,22 +103,37 @@ async function authenticateApiKey(req, res, next) {
 }
 
 // Function to log API usage (can be called from routes after processing)
-async function logApiUsage(apiKeyData, path, statusCode, videoIdRequested, notes = null) {
+async function logApiUsage(apiKeyData, path, statusCode, videoIdRequested, details = null) {
     if (!supabase || !apiKeyData || !apiKeyData.id) {
         console.warn('Skipping API usage log: Supabase client not initialized or missing API key data.');
         return;
     }
     try {
-        const { error } = await supabase.from('api_usage_logs').insert({
+        const logEntry = {
             api_key_id: apiKeyData.id,
             path: path,
             status_code: statusCode,
-            ip_address: null, // Can be added if req object is passed or IP is extracted earlier
+            ip_address: null,
             video_id_requested: videoIdRequested,
-            notes: notes
-        });
+        };
+        if (details) {
+            logEntry.details = details;
+        }
+
+        const { error } = await supabase.from('api_usage_logs').insert(logEntry);
+
         if (error) {
-            console.error('Error logging API usage:', error);
+            // Check if the error is due to the 'details' column not existing
+            if (error.code === '42703' || (error.message && error.message.includes('column "details" of relation "api_usage_logs" does not exist'))) {
+                console.warn("Could not log 'details' column, it may not exist in 'api_usage_logs'. Attempting to log without it.");
+                delete logEntry.details; // Remove the details field and try again
+                const retryError = (await supabase.from('api_usage_logs').insert(logEntry)).error;
+                if (retryError) {
+                    console.error('Error logging API usage on retry (without details):', retryError);
+                }
+            } else {
+                console.error('Error logging API usage:', error);
+            }
         }
         // Update last_used_at for the API key
         await supabase.from('api_keys').update({ last_used_at: new Date().toISOString() }).eq('id', apiKeyData.id);
@@ -185,28 +200,42 @@ function formatTranscriptTextWithParagraphs(captions) {
     if (!captions || captions.length === 0) {
         return "";
     }
+
+    const getCleanText = (snippet) => {
+        if (snippet && typeof snippet.text === 'string') {
+            // First, decode HTML entities, then remove musical notes, then trim.
+            let text = decodeHTMLEntities(snippet.text);
+            text = text.replace(/\s*♪\s*/g, '').trim();
+            return text;
+        }
+        // console.warn('Invalid snippet or snippet.text is not a string:', snippet);
+        return '';
+    };
+
     let segments = [];
-    let firstText = captions[0] && captions[0].text ? decodeHTMLEntities(captions[0].text.replace(/\s*♪\s*/g, '').trim()) : '';
-    let currentSegment = firstText;
-    const paragraph_break_threshold = 0.7;
+    let currentSegment = getCleanText(captions[0]);
+    const paragraph_break_threshold = 0.7; // seconds
 
     for (let i = 1; i < captions.length; i++) {
         const prevSnippet = captions[i-1];
         const currentSnippet = captions[i];
         
+        if (!prevSnippet || typeof prevSnippet.start === 'undefined' || typeof prevSnippet.dur === 'undefined' || !currentSnippet || typeof currentSnippet.start === 'undefined') {
+            // console.warn('Skipping segment due to malformed snippet data:', { prevSnippet, currentSnippet });
+            continue;
+        }
+
         const prevSnippetStart = parseFloat(prevSnippet.start);
         const prevSnippetDur = parseFloat(prevSnippet.dur);
         const currentSnippetStart = parseFloat(currentSnippet.start);
 
         if (isNaN(prevSnippetStart) || isNaN(prevSnippetDur) || isNaN(currentSnippetStart)) {
-            console.warn('Skipping segment due to invalid timing data:', prevSnippet, currentSnippet);
+            // console.warn('Skipping segment due to invalid timing data:', { prevSnippet, currentSnippet });
             continue; 
         }
 
         const gap = currentSnippetStart - (prevSnippetStart + prevSnippetDur);
-
-        let cleanText = currentSnippet.text ? currentSnippet.text.replace(/\s*♪\s*/g, '').trim() : '';
-        cleanText = decodeHTMLEntities(cleanText); // Decode entities here
+        const cleanText = getCleanText(currentSnippet);
 
         if (cleanText === '' && currentSegment === '') continue;
 
@@ -218,43 +247,8 @@ function formatTranscriptTextWithParagraphs(captions) {
         }
     }
     if (currentSegment) segments.push(currentSegment);
+    
     return segments.join('\n\n').replace(/\s+\n\n/g, '\n\n').trim();
-}
-
-async function fetchTranscriptWithKomeAI(videoUrl, videoId /* videoId for logging */) {
-    const komeApiUrl = 'https://kome.ai/api/transcript';
-    const requestBody = {
-        video_id: videoUrl, // Kome.ai expects the full URL here
-        format: true
-    };
-
-    try {
-        console.log(`Attempt 1: Fetching with Kome.ai for video: ${videoUrl}`);
-        const response = await axios.post(komeApiUrl, requestBody, {
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            timeout: 45000 // 45 second timeout for Kome.ai
-        });
-
-        if (response.data && response.data.transcript) {
-            console.log('[Kome.ai] Successfully fetched transcript data.');
-            const decodedTranscript = decodeHTMLEntities(response.data.transcript); // Decode entities
-            return { transcriptText: decodedTranscript, error: null, source: 'kome.ai' };
-        } else if (response.data && response.data.error) {
-            console.warn(`[Kome.ai] API reported failure: ${response.data.error}`);
-            return { error: response.data.error, transcriptText: null, source: 'kome.ai' };
-        } else {
-            console.warn('[Kome.ai] No transcript data or error in response:', response.data);
-            return { error: 'Kome.ai did not return recognizable transcript or error.', transcriptText: null, source: 'kome.ai' };
-        }
-    } catch (err) {
-        console.error('[Kome.ai] Error during API call:', err.response ? JSON.stringify(err.response.data) : err.message);
-        const errorMessage = err.response && err.response.data && err.response.data.error 
-                           ? err.response.data.error 
-                           : (err.message || 'Unknown error during Kome.ai call.');
-        return { error: errorMessage, transcriptText: null, source: 'kome.ai', errorObject: err };
-    }
 }
 
 async function fetchTranscriptWithRapidAPI(videoId) {
@@ -266,50 +260,55 @@ async function fetchTranscriptWithRapidAPI(videoId) {
 
     const options = {
         method: 'GET',
-        url: 'https://youtube-transcript3.p.rapidapi.com/api/transcript',
+        url: 'https://youtube-transcriptor.p.rapidapi.com/transcript',
         params: {
-            videoId: videoId,
+            video_id: videoId,
             lang: 'en' // Requesting English explicitly
-            // flat_text: false is implied by not including it
         },
         headers: {
             'x-rapidapi-key': rapidApiKey,
-            'x-rapidapi-host': 'youtube-transcript3.p.rapidapi.com'
+            'x-rapidapi-host': 'youtube-transcriptor.p.rapidapi.com'
         },
         timeout: 30000 // 30 second timeout
     };
 
     try {
-        console.log(`Attempt 1: Fetching with RapidAPI (youtube-transcript3) for video ID: ${videoId}`);
+        console.log(`Attempt 1: Fetching with RapidAPI (youtube-transcriptor) for video ID: ${videoId}`);
         const response = await axios.request(options);
 
-        if (response.data && response.data.success && Array.isArray(response.data.transcript) && response.data.transcript.length > 0) {
-            console.log('[RapidAPI] Successfully fetched transcript data.');
-            console.log('[RapidAPI] First transcript item from API:', JSON.stringify(response.data.transcript[0]));
+        // The new API returns an array with one object
+        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+            const videoData = response.data[0];
+            
+            // Check if we have transcription data
+            if (videoData.transcription && Array.isArray(videoData.transcription) && videoData.transcription.length > 0) {
+                console.log('[RapidAPI] Successfully fetched transcript data.');
+                console.log('[RapidAPI] First transcript item from API:', JSON.stringify(videoData.transcription[0]));
 
-            const adaptedCaptions = response.data.transcript.map(item => {
-                const offsetNum = parseFloat(item.offset);
-                const durationNum = parseFloat(item.duration);
+                const adaptedCaptions = videoData.transcription.map(item => {
+                    const startNum = parseFloat(item.start);
+                    const durationNum = parseFloat(item.dur);
 
-                if (isNaN(offsetNum) || isNaN(durationNum)) {
-                    console.warn(`[RapidAPI] Invalid numeric value for offset/duration in item: Offset=${item.offset}, Duration=${item.duration}`);
-                    // Return a structure that can be filtered out or handled, or skip this item
-                    return { text: item.text, start: '0.000', dur: '0.000', invalid: true };
-                }
+                    if (isNaN(startNum) || isNaN(durationNum)) {
+                        console.warn(`[RapidAPI] Invalid numeric value for start/duration in item: Start=${item.start}, Duration=${item.dur}`);
+                        return { text: item.subtitle, start: '0.000', dur: '0.000', invalid: true };
+                    }
 
-                return {
-                    text: item.text,
-                    start: offsetNum.toFixed(3),
-                    dur: durationNum.toFixed(3)
-                };
-            }).filter(item => !item.invalid);
-            return { captions: adaptedCaptions, error: null, source: 'rapidapi' };
-        } else if (response.data && !response.data.success) {
-            console.warn(`[RapidAPI] API reported failure: ${response.data.error}`);
-            return { error: response.data.error || 'RapidAPI returned success:false.', captions: null, source: 'rapidapi' };
+                    return {
+                        text: item.subtitle,
+                        start: startNum.toFixed(3),
+                        dur: durationNum.toFixed(3)
+                    };
+                }).filter(item => !item.invalid);
+                
+                return { captions: adaptedCaptions, error: null, source: 'rapidapi' };
+            } else {
+                console.warn('[RapidAPI] No transcription data in response:', response.data);
+                return { error: 'RapidAPI did not return transcription data.', captions: null, source: 'rapidapi' };
+            }
         } else {
-            console.warn('[RapidAPI] No transcript data in response or unexpected format:', response.data);
-            return { error: 'RapidAPI did not return recognizable transcript data.', captions: null, source: 'rapidapi' };
+            console.warn('[RapidAPI] No data in response or unexpected format:', response.data);
+            return { error: 'RapidAPI returned empty or invalid response.', captions: null, source: 'rapidapi' };
         }
     } catch (err) {
         console.error('[RapidAPI] Error during API call:', err.response ? err.response.data : err.message);
@@ -326,152 +325,95 @@ async function fetchTranscriptLogic(videoUrl, apiKeyData) {
         return { error: 'Invalid YouTube URL or could not extract video ID', status: 400 };
     }
 
-    let finalTranscriptOutput = null;
     let captionsForFormatting = null;
     let methodUsed = '';
     let language = 'en';
-    let primaryError = null;
-    let fallbackErrors = {};
+    let errors = {};
     let statusCode = 200;
-    let logNotes = null;
+    let logNotes = "";
 
-    // --- Attempt 1: Kome.ai ---
-    const komeResult = await fetchTranscriptWithKomeAI(videoUrl, videoId);
-    if (komeResult.transcriptText) {
-        finalTranscriptOutput = komeResult.transcriptText;
-        methodUsed = 'Kome.ai';
-        if (komeResult.language) language = komeResult.language;
-    } else {
-        console.warn(`[Kome.ai] Failed: ${komeResult.error}. Will try fallback.`);
-        primaryError = {
-            message: komeResult.error || 'Kome.ai method failed.',
-            source: 'kome.ai',
-            errorObject: komeResult.errorObject
-        };
-        logNotes = `Kome.ai failed: ${primaryError.message}`;
-    }
+    // --- Concurrent Fetching ---
+    console.log(`Starting concurrent fetch for video ID: ${videoId}`);
+    const rapidApiPromise = fetchTranscriptWithRapidAPI(videoId);
+    const scraperPromise = getSubtitlesFromScraper({ videoID: videoId, lang: 'en' })
+        .catch(err => {
+            console.error('[youtube-captions-scraper] Promise rejection:', err);
+            return { error: err.message || 'Scraper promise failed', fromScraperError: true };
+        });
 
-    // --- Attempt 2: RapidAPI (youtube-transcript3) (if Kome.ai failed) ---
-    if (!finalTranscriptOutput) {
-        const rapidApiResult = await fetchTranscriptWithRapidAPI(videoId);
-        if (rapidApiResult.captions && rapidApiResult.captions.length > 0) {
-            captionsForFormatting = rapidApiResult.captions;
-            methodUsed = 'RapidAPI (youtube-transcript3) (fallback)';
-            if(rapidApiResult.language) language = rapidApiResult.language;
-            if(primaryError && primaryError.source === 'kome.ai') fallbackErrors.kome = primaryError.message;
-            primaryError = null;
-            logNotes = null;
-        } else {
-            console.warn(`[RapidAPI] Failed: ${rapidApiResult.error}. Will try next fallback.`);
-            const rapidApiErrorMsg = rapidApiResult.error || 'RapidAPI method failed.';
-            if (!primaryError) {
-                primaryError = { message: rapidApiErrorMsg, source: 'rapidapi', errorObject: rapidApiResult.errorObject };
-                logNotes = `RapidAPI failed: ${rapidApiErrorMsg}`;
-            } else {
-                fallbackErrors.rapidapi = rapidApiErrorMsg;
-                logNotes = `${logNotes}; RapidAPI failed: ${rapidApiErrorMsg}`;
-            }
-        }
-    }
+    const [rapidApiResult, scraperResult] = await Promise.all([
+        rapidApiPromise,
+        scraperPromise
+    ]);
 
-    // --- Attempt 3: youtube-captions-scraper (if previous failed) ---
-    if (!finalTranscriptOutput && !captionsForFormatting) {
-        try {
-            console.log(`Attempt 3: Fetching captions for video ID: ${videoId} using youtube-captions-scraper...`);
-            const scraperCaptions = await getSubtitlesFromScraper({ videoID: videoId, lang: 'en' });
-            console.log(`[youtube-captions-scraper] Captions received for ${videoId}:`, scraperCaptions ? `Array with ${scraperCaptions.length} items` : String(scraperCaptions));
-
-            if (scraperCaptions && scraperCaptions.length > 0) {
-                captionsForFormatting = scraperCaptions;
-                methodUsed = 'youtube-captions-scraper (fallback 2)';
-                if(primaryError) fallbackErrors[primaryError.source] = primaryError.message;
-                primaryError = null;
-                logNotes = null;
-            } else {
-                const scraperErrorMsg = `youtube-captions-scraper found no captions (received: ${String(scraperCaptions)})`;
-                console.warn(`[youtube-captions-scraper] ${scraperErrorMsg}`);
-                if (!primaryError) primaryError = { message: scraperErrorMsg, source: 'youtube-captions-scraper' };
-                else fallbackErrors.scraper = scraperErrorMsg;
-                logNotes = `Scraper failed: ${scraperErrorMsg}`;
-            }
-        } catch (err) {
-            const scraperErrorMsg = err.message || 'Unknown error from youtube-captions-scraper';
-            console.error(`[youtube-captions-scraper] Error for video ${videoId}:`, err);
-            if (!primaryError) primaryError = { message: scraperErrorMsg, source: 'youtube-captions-scraper', errorObject: err };
-            else fallbackErrors.scraper = scraperErrorMsg;
-            logNotes = `Scraper failed: ${scraperErrorMsg}`;
-        }
-    }
-
-    // --- Attempt 4: youtube-transcript (if previous attempts failed) ---
-    if (!finalTranscriptOutput && !captionsForFormatting) {
-        console.log(`Attempt 4: Fallback to youtube-transcript for video ID: ${videoId}...`);
+    // --- Result Processing ---
+    // 1. Prioritize RapidAPI
+    if (rapidApiResult && rapidApiResult.captions && rapidApiResult.captions.length > 0) {
+        captionsForFormatting = rapidApiResult.captions;
+        methodUsed = 'RapidAPI';
+        language = rapidApiResult.language || 'en';
+        logNotes = 'Success via RapidAPI.';
+    } 
+    // 2. Fallback to youtube-captions-scraper
+    else if (scraperResult && Array.isArray(scraperResult) && scraperResult.length > 0) {
+        errors.rapidapi = (rapidApiResult && rapidApiResult.error) ? rapidApiResult.error : 'RapidAPI returned no captions.';
+        console.log(`[Fallback] RapidAPI failed (${errors.rapidapi}). Using youtube-captions-scraper result.`);
+        captionsForFormatting = scraperResult;
+        methodUsed = 'youtube-captions-scraper (fallback)';
+        logNotes = `RapidAPI Failed. Success via scraper fallback.`;
+    } 
+    // 3. If both concurrent fetches fail, try youtube-transcript as a last resort
+    else {
+        errors.rapidapi = (rapidApiResult && rapidApiResult.error) ? rapidApiResult.error : 'RapidAPI returned no captions.';
+        errors.scraper = (scraperResult && scraperResult.error) ? scraperResult.error : 'Scraper returned no captions or was invalid.';
+        logNotes = `RapidAPI Failed: ${errors.rapidapi}. Scraper Failed: ${errors.scraper}. `;
+        
+        console.log(`Final fallback: Trying youtube-transcript for ${videoId}.`);
         try {
             const transcriptItems = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' });
-            console.log(`[youtube-transcript] Transcript items received for ${videoId}:`, transcriptItems ? `Array with ${transcriptItems.length} items` : String(transcriptItems));
-            
             if (transcriptItems && transcriptItems.length > 0) {
                 captionsForFormatting = transcriptItems.map(item => ({
                     text: item.text,
                     start: (item.offset / 1000).toFixed(3),
                     dur: (item.duration / 1000).toFixed(3)
                 }));
-                methodUsed = 'youtube-transcript (fallback 3)';
-                if(primaryError) fallbackErrors[primaryError.source || 'unknown_ wcześniejszy'] = primaryError.message;
-                primaryError = null;
-                logNotes = null;
+                methodUsed = 'youtube-transcript (fallback 2)';
+                logNotes += 'Success via youtube-transcript fallback.';
             } else {
-                const ytErrorMsg = `youtube-transcript found no captions (received: ${String(transcriptItems)})`;
-                console.warn(`[youtube-transcript] ${ytErrorMsg}`);
-                if (!primaryError) primaryError = { message: ytErrorMsg, source: 'youtube-transcript' };
-                else fallbackErrors.ytTranscript = ytErrorMsg;
-                logNotes = `YT-Transcript failed: ${ytErrorMsg}`;
+                errors.ytTranscript = 'youtube-transcript found no captions.';
+                logNotes += 'youtube-transcript also failed.';
             }
         } catch (err) {
-            const ytErrorMsg = err.message || 'Unknown error from youtube-transcript';
             console.error(`[youtube-transcript] Error for video ${videoId}:`, err);
-            if (!primaryError) primaryError = { message: ytErrorMsg, source: 'youtube-transcript', errorObject: err };
-            else fallbackErrors.ytTranscript = ytErrorMsg;
-            logNotes = `YT-Transcript failed: ${ytErrorMsg}`;
+            errors.ytTranscript = err.message || 'Unknown error from youtube-transcript';
+            logNotes += `youtube-transcript also failed: ${errors.ytTranscript}.`;
         }
     }
 
-    // --- Process results or return error ---
-    if (!finalTranscriptOutput && captionsForFormatting && captionsForFormatting.length > 0) {
-        console.log(`Formatting transcript using: ${methodUsed}`);
+    // --- Formatting and Response ---
+    let finalTranscriptOutput = null;
+    if (captionsForFormatting) {
         finalTranscriptOutput = formatTranscriptTextWithParagraphs(captionsForFormatting);
     }
 
     if (!finalTranscriptOutput) {
-        let finalErrorMessage = `Failed to fetch transcript for video ID: ${videoId} using all available methods.`;
-        if (primaryError) {
-            finalErrorMessage += ` Last error (${primaryError.source}): ${primaryError.message}.`;
+        statusCode = 502;
+        const finalError = errors.ytTranscript || errors.scraper || errors.rapidapi || 'All transcript sources failed.';
+        const logMessage = `Failed: ${logNotes}`;
+        if (apiKeyData) {
+            await logApiUsage(apiKeyData, '/api/transcript', statusCode, videoId, logMessage);
         }
-        Object.keys(fallbackErrors).forEach(key => {
-            finalErrorMessage += ` Previous failure (${key}): ${fallbackErrors[key]}.`;
-        });
-        console.error(finalErrorMessage);
-        statusCode = 404;
-        logNotes = `All methods failed. Primary: ${finalErrorMessage}. Fallbacks: ${JSON.stringify(fallbackErrors)}.`;
-        if (apiKeyData) await logApiUsage(apiKeyData, '/api/get_transcript', statusCode, videoId, logNotes);
-        return {
-            error: finalErrorMessage,
-            details: {
-                primarySource: primaryError?.source,
-                fallbackErrors: fallbackErrors,
-                finalMessage: 'No transcript could be retrieved for this video after all attempts.'
-            },
-            status: statusCode
-        };
+        return { error: finalError, status: statusCode, details: errors };
     }
-    
-    statusCode = 200;
-    logNotes = logNotes ? `${logNotes}; Success via ${methodUsed}` : `Success via ${methodUsed}`;
-    if (apiKeyData) await logApiUsage(apiKeyData, '/api/get_transcript', statusCode, videoId, logNotes);
+
+    if (apiKeyData) {
+        await logApiUsage(apiKeyData, '/api/transcript', statusCode, videoId, `Success via ${methodUsed}`);
+    }
+
     return {
-        video_id: videoId,
+        transcript: finalTranscriptOutput,
+        videoId: videoId,
         language: language,
-        full_text: finalTranscriptOutput,
         method: methodUsed,
         status: statusCode
     };
@@ -516,8 +458,8 @@ app.post('/api/transcript', async (req, res) => {
     }
 
     res.json({
-        transcript: result.full_text,
-        video_id: result.video_id,
+        transcript: result.transcript,
+        video_id: result.videoId,
         language: result.language
         // method is not exposed to UI
     });
@@ -541,55 +483,65 @@ app.post('/api/get_transcript', authenticateApiKey, async (req, res) => {
     }
 
     res.json({
-        video_id: result.video_id,
+        video_id: result.videoId,
         language: result.language,
-        full_text: result.full_text,
+        full_text: result.transcript,
         method: result.method
     });
 });
 
 // New Bulk Transcripts Endpoint (requires API key)
 app.post('/api/bulk-transcripts', authenticateApiKey, async (req, res) => {
-    const { video_urls } = req.body;
+    // Spreading out requests to avoid hitting the per-second rate limit.
+    // A 550ms delay results in ~1.8 requests/sec, safely under the 2 req/sec limit.
+    const { video_urls, delay = 550 } = req.body;
 
     if (!Array.isArray(video_urls) || video_urls.length === 0) {
         return res.status(400).json({ error: 'Please provide a non-empty array of video_urls.' });
     }
 
-    console.log(`API request for /api/bulk-transcripts: ${video_urls.length} URLs`);
+    console.log(`API request for /api/bulk-transcripts: ${video_urls.length} URLs. Delay between starting each request: ${delay}ms`);
+
+    const validUrls = video_urls.filter(url => typeof url === 'string' && url.trim());
+    const promises = [];
+
+    for (const url of validUrls) {
+        // Start the fetch logic, but don't wait for it to complete here.
+        // Add the promise to an array to be awaited later.
+        const promise = fetchTranscriptLogic(url, req.apiKeyData)
+            .then(result => ({ url, ...result }))
+            .catch(error => ({ url, error: error.message || 'An unknown error occurred', transcript: null }));
+        
+        promises.push(promise);
+        
+        // Wait for the specified delay before starting the next request.
+        await new Promise(resolve => setTimeout(resolve, delay));
+    }
+
+    // Now, wait for all the in-flight promises to complete.
+    const results = await Promise.all(promises);
 
     let allTranscriptsText = '';
     const failedUrls = [];
     let successfulCount = 0;
 
-    for (const videoUrl of video_urls) {
-        if (typeof videoUrl !== 'string' || !videoUrl.trim()) {
-            failedUrls.push({ url: videoUrl, error: 'Invalid or empty URL string provided.' });
-            continue;
-        }
-        
-        const videoId = extractVideoId(videoUrl); // For logging/error reporting consistency
-        console.log(`Fetching transcript for: ${videoUrl} (ID: ${videoId || 'N/A'}) in bulk request.`);
-
-        // req.apiKeyData is populated by the authenticateApiKey middleware
-        const result = await fetchTranscriptLogic(videoUrl, req.apiKeyData);
-
-        if (result.full_text) {
+    results.forEach(result => {
+        if (result.transcript) {
             if (allTranscriptsText.length > 0) {
-                allTranscriptsText += '\n\n';
+                allTranscriptsText += '\\n\\n';
             }
-            allTranscriptsText += result.full_text;
+            allTranscriptsText += result.transcript;
             successfulCount++;
         } else {
-            console.warn(`Failed to fetch transcript for ${videoUrl} in bulk mode. Error: ${result.error}`);
-            failedUrls.push({ 
-                url: videoUrl, 
-                error: result.error, 
+            console.warn(`Failed to fetch transcript for ${result.url} in bulk mode. Error: ${result.error}`);
+            failedUrls.push({
+                url: result.url,
+                error: result.error,
                 details: result.details,
-                videoId: videoId 
+                videoId: extractVideoId(result.url)
             });
         }
-    }
+    });
 
     let responseText = '';
     if (failedUrls.length > 0) {
